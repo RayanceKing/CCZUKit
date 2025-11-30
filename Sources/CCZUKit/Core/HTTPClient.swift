@@ -1,0 +1,125 @@
+import Foundation
+
+/// HTTP客户端协议
+public protocol HTTPClient: Sendable {
+    var account: Account { get }
+    var session: URLSession { get }
+    var properties: PropertyStorage { get }
+    
+    func request(url: URL, method: String, headers: [String: String]?, body: Data?) async throws -> (Data, HTTPURLResponse)
+}
+
+/// 属性存储
+public actor PropertyStorage {
+    private var storage: [String: Property] = [:]
+    
+    public init() {}
+    
+    public func get(_ key: String) -> Property? {
+        return storage[key]
+    }
+    
+    public func set(_ key: String, value: Property) {
+        storage[key] = value
+    }
+    
+    public func remove(_ key: String) {
+        storage.removeValue(forKey: key)
+    }
+}
+
+/// 默认HTTP客户端实现
+public final class DefaultHTTPClient: HTTPClient, @unchecked Sendable {
+    public let account: Account
+    public let session: URLSession
+    public let properties: PropertyStorage
+    
+    public init(account: Account) {
+        self.account = account
+        
+        let configuration = URLSessionConfiguration.default
+        configuration.httpCookieAcceptPolicy = .always
+        configuration.httpShouldSetCookies = true
+        configuration.httpCookieStorage = HTTPCookieStorage.shared
+        
+        self.session = URLSession(configuration: configuration)
+        self.properties = PropertyStorage()
+    }
+    
+    public convenience init(username: String, password: String) {
+        self.init(account: Account(username: username, password: password))
+    }
+    
+    public func request(
+        url: URL,
+        method: String = "GET",
+        headers: [String: String]? = nil,
+        body: Data? = nil
+    ) async throws -> (Data, HTTPURLResponse) {
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.httpBody = body
+        
+        // 添加默认headers
+        for (key, value) in CCZUConstants.defaultHeaders {
+            request.setValue(value, forHTTPHeaderField: key)
+        }
+        
+        // 添加自定义headers
+        if let headers = headers {
+            for (key, value) in headers {
+                request.setValue(value, forHTTPHeaderField: key)
+            }
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            let task = session.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    continuation.resume(throwing: CCZUError.networkError(error))
+                    return
+                }
+                
+                guard let data = data, let httpResponse = response as? HTTPURLResponse else {
+                    continuation.resume(throwing: CCZUError.invalidResponse)
+                    return
+                }
+                
+                continuation.resume(returning: (data, httpResponse))
+            }
+            task.resume()
+        }
+    }
+}
+
+extension HTTPClient {
+    /// GET请求
+    public func get(url: URL, headers: [String: String]? = nil) async throws -> (Data, HTTPURLResponse) {
+        return try await request(url: url, method: "GET", headers: headers, body: nil)
+    }
+    
+    /// POST请求
+    public func post(url: URL, headers: [String: String]? = nil, body: Data? = nil) async throws -> (Data, HTTPURLResponse) {
+        return try await request(url: url, method: "POST", headers: headers, body: body)
+    }
+    
+    /// POST JSON请求
+    public func postJSON<T: Encodable>(url: URL, headers: [String: String]? = nil, json: T) async throws -> (Data, HTTPURLResponse) {
+        var allHeaders = headers ?? [:]
+        allHeaders["Content-Type"] = "application/json"
+        
+        let jsonData = try JSONEncoder().encode(json)
+        return try await post(url: url, headers: allHeaders, body: jsonData)
+    }
+    
+    /// POST Form请求
+    public func postForm(url: URL, headers: [String: String]? = nil, form: [String: String]) async throws -> (Data, HTTPURLResponse) {
+        var allHeaders = headers ?? [:]
+        allHeaders["Content-Type"] = "application/x-www-form-urlencoded"
+        
+        let formString = form.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
+            .joined(separator: "&")
+        let formData = formString.data(using: .utf8)
+        
+        return try await post(url: url, headers: allHeaders, body: formData)
+    }
+}
