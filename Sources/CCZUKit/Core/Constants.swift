@@ -2,8 +2,8 @@ import Foundation
 
 /// API常量
 public enum CCZUConstants {
-    public static let rootSSOLogin = "https://sso.cczu.edu.cn/lyuapServer/login"
-    public static let rootVPNURL = "https://vpn.cczu.edu.cn"
+    public static let rootSSOLogin = "http://sso.cczu.edu.cn/sso/login"
+    public static let rootVPNURL = "https://zmvpn.cczu.edu.cn"
     public static let wechatAppAPI = "http://jwqywx.cczu.edu.cn"
     
     public static let defaultHeaders: [String: String] = [
