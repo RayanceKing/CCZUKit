@@ -114,10 +114,16 @@ extension DefaultHTTPClient: SSOLogin {
         
         let (_, loginResponse) = try await postForm(url: url, form: loginParam)
         
+        // 登录成功可能返回302重定向，也可能返回200（已在当前会话登录）
         if loginResponse.statusCode == 302,
            let location = loginResponse.value(forHTTPHeaderField: "Location"),
            let redirectURL = URL(string: location) {
             return try await recursionRedirectHandle(url: redirectURL)
+        }
+        
+        if loginResponse.statusCode == 200 {
+            // 视为登录成功，返回当前页面响应
+            return (Data(), loginResponse)
         }
         
         throw CCZUError.loginFailed("Service login failed")

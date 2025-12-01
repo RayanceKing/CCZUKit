@@ -18,12 +18,16 @@ public final class JwqywxApplication: @unchecked Sendable {
     
     /// 登录教务企业微信
     public func login() async throws -> Message<LoginUserData> {
-        let url = URL(string: "\(CCZUConstants.wechatAppAPI)/api/login")!
+        // 使用抓包信息：端口8180，HTTP，且登录时不需要Authorization头
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/login")!
         
         let loginData: [String: String] = [
             "userid": client.account.username,
             "userpwd": client.account.password
         ]
+        
+        // 确保登录请求不携带Authorization
+        customHeaders.removeValue(forKey: "Authorization")
         
         let (data, response) = try await client.postJSON(url: url, headers: customHeaders, json: loginData)
         
@@ -46,7 +50,7 @@ public final class JwqywxApplication: @unchecked Sendable {
         authorizationToken = "Bearer \(token)"
         authorizationId = userData.id
         
-        // 更新headers
+        // 更新headers：后续接口需要Authorization
         customHeaders["Authorization"] = authorizationToken
         
         return message
@@ -60,7 +64,7 @@ public final class JwqywxApplication: @unchecked Sendable {
             throw CCZUError.notLoggedIn
         }
         
-        let url = URL(string: "\(CCZUConstants.wechatAppAPI)/api/cj_xh")!
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/cj_xh")!
         let requestData = ["xh": authId]
         
         let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: requestData)
@@ -75,7 +79,7 @@ public final class JwqywxApplication: @unchecked Sendable {
             throw CCZUError.notLoggedIn
         }
         
-        let url = URL(string: "\(CCZUConstants.wechatAppAPI)/api/cj_xh_xfjd")!
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/cj_xh_xfjd")!
         let requestData = ["xh": authId]
         
         let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: requestData)
@@ -88,7 +92,7 @@ public final class JwqywxApplication: @unchecked Sendable {
     
     /// 获取所有学期
     public func getTerms() async throws -> Message<Term> {
-        let url = URL(string: "\(CCZUConstants.wechatAppAPI)/api/xqall")!
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/xqall")!
         let (data, _) = try await client.get(url: url)
         
         let decoder = JSONDecoder()
@@ -103,7 +107,7 @@ public final class JwqywxApplication: @unchecked Sendable {
             throw CCZUError.notLoggedIn
         }
         
-        let url = URL(string: "\(CCZUConstants.wechatAppAPI)/api/kb_xq_xh")!
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/kb_xq_xh")!
         
         let requestData: [String: String] = [
             "xh": client.account.username,
