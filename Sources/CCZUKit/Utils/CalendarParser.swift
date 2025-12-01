@@ -51,13 +51,29 @@ public struct CalendarParser {
                     var weeks: [Int] = []
                     
                     // 解析周次和地点
+                    var locationParts: [String] = []
                     for component in components.dropFirst() {
-                        if component.contains("周") {
-                            weeks = parseWeeks(from: component)
-                        } else {
-                            location = component
+                        let compTrimmed = component.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if compTrimmed.isEmpty { continue }
+
+                        // 尝试识别周次（如含“周”，或仅为数字/范围如 "1-16" 或 "17-18,"）
+                        if compTrimmed.contains("周") || compTrimmed.range(of: "^\\d+(-\\d+)?[,，]?$", options: .regularExpression) != nil || compTrimmed.range(of: "单|双") != nil {
+                            let parsed = parseWeeks(from: compTrimmed)
+                            if !parsed.isEmpty {
+                                weeks = parsed
+                                continue
+                            }
+                        }
+
+                        // 非周次部分视为地点或附加信息，收集起来
+                        // 去除末尾逗号与其他常见分隔符
+                        let cleaned = compTrimmed.trimmingCharacters(in: CharacterSet(charactersIn: ",，;:。"))
+                        if !cleaned.isEmpty {
+                            locationParts.append(cleaned)
                         }
                     }
+
+                    location = locationParts.joined(separator: " ")
                     
                     // 提取对应的教师信息
                     let teacherParts = rawCourse.teacher.components(separatedBy: ",/")
@@ -85,22 +101,32 @@ public struct CalendarParser {
     /// - Returns: 周次数组
     private static func parseWeeks(from weekString: String) -> [Int] {
         var weeks: [Int] = []
-        
-        // 移除"周"字
-        let cleaned = weekString.replacingOccurrences(of: "周", with: "")
-        
-        // 处理单周/双周
+        // 规范化：去除“周”、中文标点与空白
+        var cleaned = weekString.replacingOccurrences(of: "周", with: "")
+        cleaned = cleaned.replacingOccurrences(of: "单", with: "单")
+        cleaned = cleaned.replacingOccurrences(of: "双", with: "双")
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        cleaned = cleaned.trimmingCharacters(in: CharacterSet(charactersIn: ",，;:。"))
+
+        // 处理单周/双周标识
         let isOdd = cleaned.contains("单")
         let isEven = cleaned.contains("双")
-        let rangeStr = cleaned.replacingOccurrences(of: "[单双]", with: "", options: .regularExpression)
-        
-        // 解析范围
+        cleaned = cleaned.replacingOccurrences(of: "单", with: "")
+        cleaned = cleaned.replacingOccurrences(of: "双", with: "")
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 提取仅含数字和连字符的部分
+        let rangeStr = cleaned.replacingOccurrences(of: "[^0-9\\-]", with: "", options: .regularExpression)
+
+        if rangeStr.isEmpty {
+            return []
+        }
+
         if rangeStr.contains("-") {
             let parts = rangeStr.split(separator: "-").compactMap { Int($0) }
             if parts.count == 2 {
                 let start = parts[0]
                 let end = parts[1]
-                
                 for week in start...end {
                     if isOdd && week % 2 == 1 {
                         weeks.append(week)
@@ -114,7 +140,7 @@ public struct CalendarParser {
         } else if let week = Int(rangeStr) {
             weeks.append(week)
         }
-        
+
         return weeks
     }
 }
