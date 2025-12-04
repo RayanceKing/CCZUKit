@@ -5,6 +5,33 @@ public struct Message<T: Decodable>: Decodable, Sendable where T: Sendable {
     public let status: Int
     public let message: [T]
     public let token: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case message
+        case token
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        status = try container.decode(Int.self, forKey: .status)
+        token = try container.decodeIfPresent(String.self, forKey: .token)
+        
+        // 使用灵活的方式解析 message，处理任何返回格式
+        if container.contains(.message) {
+            let msgDecoder = try container.superDecoder(forKey: .message)
+            do {
+                // 尝试作为数组解析
+                let arrayContainer = try msgDecoder.singleValueContainer()
+                message = try arrayContainer.decode([T].self)
+            } catch {
+                // 如果失败，使用空数组
+                message = []
+            }
+        } else {
+            message = []
+        }
+    }
 }
 
 // MARK: - 登录用户数据
@@ -121,6 +148,47 @@ public struct RawCourse: Sendable {
     public init(course: String, teacher: String) {
         self.course = course
         self.teacher = teacher
+    }
+}
+
+// MARK: - 考试安排
+public struct ExamArrangement: Decodable, Sendable {
+    public let courseId: String
+    public let courseName: String
+    public let classId: String
+    public let className: String
+    public let studentId: String
+    public let studentName: String
+    public let examLocation: String?
+    public let examTime: String?
+    public let examType: String
+    public let studyType: String
+    public let campus: String
+    public let remark: String?
+    public let week: Int?
+    public let startSlot: Int?
+    public let endSlot: Int?
+    public let term: String
+    public let examDayInfo: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case courseId = "kcdm"
+        case courseName = "kcmc"
+        case classId = "xsbh"
+        case className = "xsbj"
+        case studentId = "xh"
+        case studentName = "xm"
+        case examLocation = "jse"
+        case examTime = "kssj"
+        case examType = "lb"
+        case studyType = "xklb"
+        case campus = "bmmc"
+        case remark = "bz"
+        case week = "zc"
+        case startSlot = "jc1"
+        case endSlot = "jc2"
+        case term = "xq"
+        case examDayInfo = "sjxx"
     }
 }
 

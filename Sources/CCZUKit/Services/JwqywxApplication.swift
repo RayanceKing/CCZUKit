@@ -131,6 +131,26 @@ public final class JwqywxApplication: @unchecked Sendable {
         }
         return try await getClassSchedule(term: currentTerm)
     }
+    
+    // MARK: - 考试安排查询
+    
+    /// 获取考试安排
+    public func getExamArrangements() async throws -> [ExamArrangement] {
+        guard let _ = authorizationId else {
+            throw CCZUError.notLoggedIn
+        }
+        
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/ks_xs_kslb")!
+        
+        let requestData: [String: String] = [:]
+        
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: requestData)
+        
+        let decoder = JSONDecoder()
+        let message = try decoder.decode(Message<ExamArrangement>.self, from: data)
+        
+        return message.message
+    }
 }
 
 // MARK: - 课表行数据

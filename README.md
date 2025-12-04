@@ -107,6 +107,20 @@ for term in termsResponse.message {
 let schedule = try await app.getClassSchedule(term: "202501")
 ```
 
+### 查询考试安排
+
+```swift
+// 获取考试安排
+let exams = try await app.getExamArrangements()
+for exam in exams {
+    print("\(exam.courseName)")
+    print("考试地点: \(exam.examLocation ?? "未安排")")
+    print("考试时间: \(exam.examTime ?? "未安排")")
+    print("考试类型: \(exam.examType)")
+    print("---")
+}
+```
+
 ## API 文档
 
 ### 核心类型
@@ -139,6 +153,9 @@ try await app.getTerms() -> Message<Term>
 // 获取课表
 try await app.getClassSchedule(term: String) -> [[RawCourse]]
 try await app.getCurrentClassSchedule() -> [[RawCourse]]
+
+// 获取考试安排
+try await app.getExamArrangements() -> [ExamArrangement]
 ```
 
 #### CalendarParser
@@ -172,6 +189,29 @@ public struct ParsedCourse {
     let weeks: [Int]        // 上课周次
     let dayOfWeek: Int      // 星期几 (1-7)
     let timeSlot: Int       // 第几节课
+}
+```
+
+#### ExamArrangement - 考试安排
+```swift
+public struct ExamArrangement {
+    let courseId: String          // 课程代码
+    let courseName: String        // 课程名称
+    let classId: String           // 班级ID
+    let className: String         // 班级名称
+    let studentId: String         // 学号
+    let studentName: String       // 学生姓名
+    let examLocation: String?     // 考试地点
+    let examTime: String?         // 考试时间
+    let examType: String          // 考试类型
+    let studyType: String         // 修读类型
+    let campus: String            // 校区
+    let remark: String?           // 备注
+    let week: Int?                // 考试周
+    let startSlot: Int?           // 开始节次
+    let endSlot: Int?             // 结束节次
+    let term: String              // 学期
+    let examDayInfo: String?      // 考试日期信息
 }
 ```
 

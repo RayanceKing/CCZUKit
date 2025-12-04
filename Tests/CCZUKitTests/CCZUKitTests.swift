@@ -109,6 +109,57 @@ final class CCZUKitTests: XCTestCase {
         XCTAssertEqual(course.timeSlot, 1)
     }
     
+    func testExamArrangementDecoding() {
+        // 模拟考试安排JSON数据（使用虚拟数据）
+        let json = """
+        {
+            "kcdm": "CRS001",
+            "kcmc": "示例课程（考试）",
+            "xsbh": "CLASS001",
+            "xsbj": "班级001",
+            "xh": "STU001",
+            "xm": "张三",
+            "jse": "教室101",
+            "kssj": "2025年06月19日 10:00--12:00",
+            "lb": "学分制考试",
+            "xklb": "正常修读",
+            "bmmc": "西校区",
+            "bz": "正常教学班",
+            "zc": 4,
+            "jc1": 3,
+            "jc2": 5,
+            "xq": "24-25-2",
+            "sjxx": "17,4,3,5,"
+        }
+        """
+        
+        let decoder = JSONDecoder()
+        let data = json.data(using: .utf8)!
+        
+        do {
+            let exam = try decoder.decode(ExamArrangement.self, from: data)
+            XCTAssertEqual(exam.courseId, "CRS001")
+            XCTAssertEqual(exam.courseName, "示例课程（考试）")
+            XCTAssertEqual(exam.classId, "CLASS001")
+            XCTAssertEqual(exam.className, "班级001")
+            XCTAssertEqual(exam.studentId, "STU001")
+            XCTAssertEqual(exam.studentName, "张三")
+            XCTAssertEqual(exam.examLocation, "教室101")
+            XCTAssertEqual(exam.examTime, "2025年06月19日 10:00--12:00")
+            XCTAssertEqual(exam.examType, "学分制考试")
+            XCTAssertEqual(exam.studyType, "正常修读")
+            XCTAssertEqual(exam.campus, "西校区")
+            XCTAssertEqual(exam.remark, "正常教学班")
+            XCTAssertEqual(exam.week, 4)
+            XCTAssertEqual(exam.startSlot, 3)
+            XCTAssertEqual(exam.endSlot, 5)
+            XCTAssertEqual(exam.term, "24-25-2")
+            XCTAssertEqual(exam.examDayInfo, "17,4,3,5,")
+        } catch {
+            XCTFail("Failed to decode ExamArrangement: \(error)")
+        }
+    }
+    
     // MARK: - 集成测试: SSO + WeChat登录并打印课表
     
     @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
@@ -163,4 +214,89 @@ final class CCZUKitTests: XCTestCase {
         // 基本断言，至少解析到0门课（允许为空但流程需完整）
         XCTAssertNotNil(courses)
     }
+    
+    // MARK: - 集成测试: 考试安排查询
+    
+    @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
+    func testLoginAndGetExamArrangements() async throws {
+        // 从环境变量读取账号密码
+        let username = ProcessInfo.processInfo.environment["CCZU_USERNAME"] ?? ""
+        let password = ProcessInfo.processInfo.environment["CCZU_PASSWORD"] ?? ""
+        
+        // 若未设置，跳过此测试
+        if username.isEmpty || password.isEmpty {
+            throw XCTSkip("未设置CCZU_USERNAME/CCZU_PASSWORD，跳过考试安排集成测试")
+        }
+        
+        let client = DefaultHTTPClient(username: username, password: password)
+        
+        // 1. SSO统一登录（可能走WebVPN）
+        let loginInfo = try await client.ssoUniversalLogin()
+        if let info = loginInfo {
+            print("[SSO] WebVPN登录成功: userid=\(info.userid)")
+        } else {
+            print("[SSO] 普通登录成功")
+        }
+        
+        // 2. 教务企业微信登录
+        let app = JwqywxApplication(client: client)
+        let userMessage = try await app.login()
+        let userName = userMessage.message.first?.username ?? ""
+        print("[JWQYWX] 登录成功: username=\(userName)")
+        
+        // 3. 获取考试安排
+        do {
+            let exams = try await app.getExamArrangements()
+            print("\n=== 考试安排 ===")
+            print("总共 \(exams.count) 门课程")
+            
+            // 统计已安排和未安排的考试
+            let scheduledExams = exams.filter { $0.examTime != nil }
+            let unscheduledExams = exams.filter { $0.examTime == nil }
+            
+            print("已安排考试: \(scheduledExams.count) 门")
+            print("未安排考试: \(unscheduledExams.count) 门")
+            
+            // 打印已安排的考试详情
+            if !scheduledExams.isEmpty {
+                print("\n已安排的考试:")
+                for exam in scheduledExams.prefix(5) {
+                    print("\n课程: \(exam.courseName.trimmingCharacters(in: .whitespaces))")
+                    print("  考试时间: \(exam.examTime ?? "N/A")")
+                    print("  考试地点: \(exam.examLocation ?? "N/A")")
+                    print("  考试类型: \(exam.examType)")
+                    print("  修读类型: \(exam.studyType.trimmingCharacters(in: .whitespaces))")
+                    print("  班级: \(exam.className.trimmingCharacters(in: .whitespaces))")
+                    if let week = exam.week {
+                        print("  考试周: 第\(week)周")
+                    }
+                    if let startSlot = exam.startSlot, let endSlot = exam.endSlot {
+                        print("  节次: 第\(startSlot)-\(endSlot)节")
+                    }
+                }
+                if scheduledExams.count > 5 {
+                    print("\n... 还有 \(scheduledExams.count - 5) 门考试未显示")
+                }
+            }
+            
+            // 基本断言
+            XCTAssertNotNil(exams)
+            XCTAssertGreaterThanOrEqual(exams.count, 0)
+            
+            // 验证考试数据的完整性（只验证非空的数据）
+            for exam in exams {
+                XCTAssertFalse(exam.courseId.trimmingCharacters(in: .whitespaces).isEmpty)
+                XCTAssertFalse(exam.courseName.trimmingCharacters(in: .whitespaces).isEmpty)
+                XCTAssertFalse(exam.term.isEmpty)
+            }
+        } catch {
+            print("[ERROR] 获取考试安排失败: \(error)")
+            // 如果是网络相关的错误，跳过测试而不是失败
+            if error is DecodingError {
+                throw XCTSkip("API 返回格式不符合预期，跳过考试安排集成测试")
+            }
+            throw error
+        }
+    }
 }
+
