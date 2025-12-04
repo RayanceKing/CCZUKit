@@ -28,8 +28,8 @@ public struct CalendarParser {
     public static func parseWeekMatrix(_ matrix: [[RawCourse]]) -> [ParsedCourse] {
         var courses: [ParsedCourse] = []
         
-        for (dayIndex, dayCourses) in matrix.enumerated() {
-            for (timeIndex, rawCourse) in dayCourses.enumerated() {
+        for (timeIndex, timeCourses) in matrix.enumerated() {
+            for (dayIndex, rawCourse) in timeCourses.enumerated() {
                 if rawCourse.course.isEmpty {
                     continue
                 }
