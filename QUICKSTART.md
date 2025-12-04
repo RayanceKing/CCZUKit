@@ -129,6 +129,11 @@ struct MyApp {
             let courses = CalendarParser.parseWeekMatrix(schedule)
             print("\n📅 本周课程: \(courses.count)门")
             
+            // 7. 查询考试安排
+            let exams = try await app.getCurrentExamArrangements()
+            let scheduledExams = exams.filter { $0.examTime != nil }
+            print("\n📝 考试安排: \(scheduledExams.count)/\(exams.count)门已安排")
+            
         } catch {
             print("❌ 错误: \(error)")
         }

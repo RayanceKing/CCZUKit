@@ -110,13 +110,22 @@ let schedule = try await app.getClassSchedule(term: "202501")
 ### 查询考试安排
 
 ```swift
-// 获取考试安排
-let exams = try await app.getExamArrangements()
-for exam in exams {
+// 获取当前学期考试安排
+let exams = try await app.getCurrentExamArrangements()
+
+// 或指定学期和考试类型
+let exams = try await app.getExamArrangements(
+    term: "25-26-1", 
+    examType: "学分制考试"
+)
+
+// 筛选已安排的考试
+let scheduledExams = exams.filter { $0.examTime != nil }
+for exam in scheduledExams {
     print("\(exam.courseName)")
-    print("考试地点: \(exam.examLocation ?? "未安排")")
-    print("考试时间: \(exam.examTime ?? "未安排")")
-    print("考试类型: \(exam.examType)")
+    print("考试时间: \(exam.examTime ?? "待定")")
+    print("考试地点: \(exam.examLocation ?? "待定")")
+    print("修读类型: \(exam.studyType)")
     print("---")
 }
 ```
@@ -155,7 +164,8 @@ try await app.getClassSchedule(term: String) -> [[RawCourse]]
 try await app.getCurrentClassSchedule() -> [[RawCourse]]
 
 // 获取考试安排
-try await app.getExamArrangements() -> [ExamArrangement]
+try await app.getExamArrangements(term: String? = nil, examType: String = "学分制考试") -> [ExamArrangement]
+try await app.getCurrentExamArrangements() -> [ExamArrangement]
 ```
 
 #### CalendarParser
@@ -195,16 +205,19 @@ public struct ParsedCourse {
 #### ExamArrangement - 考试安排
 ```swift
 public struct ExamArrangement {
-    let courseId: String          // 课程代码
+    let id: Int                   // 记录ID
+    let courseId: String          // 课程号(带版本)
+    let courseCode: String        // 课程代码
     let courseName: String        // 课程名称
-    let classId: String           // 班级ID
-    let className: String         // 班级名称
+    let classId: String           // 行政班号
+    let className: String         // 行政班名称
+    let classNumber: String       // 上课班号
     let studentId: String         // 学号
     let studentName: String       // 学生姓名
     let examLocation: String?     // 考试地点
     let examTime: String?         // 考试时间
-    let examType: String          // 考试类型
-    let studyType: String         // 修读类型
+    let examType: String          // 考试类型(如"学分制考试")
+    let studyType: String         // 修读类型(如"正常修读"、"转专业重学")
     let campus: String            // 校区
     let remark: String?           // 备注
     let week: Int?                // 考试周
@@ -212,6 +225,11 @@ public struct ExamArrangement {
     let endSlot: Int?             // 结束节次
     let term: String              // 学期
     let examDayInfo: String?      // 考试日期信息
+    let isActive: Int             // 是否有效(0或1)
+    let examSeat: String?         // 考试座位号
+    let teacherRoomId: Int        // 教室ID
+    let startTeacherSlot: String? // 监考教师开始节次
+    let endTeacherSlot: String?   // 监考教师结束节次
 }
 ```
 

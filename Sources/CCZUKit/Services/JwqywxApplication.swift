@@ -134,15 +134,36 @@ public final class JwqywxApplication: @unchecked Sendable {
     
     // MARK: - 考试安排查询
     
-    /// 获取考试安排
-    public func getExamArrangements() async throws -> [ExamArrangement] {
-        guard let _ = authorizationId else {
+    /// 获取指定学期的考试安排
+    /// - Parameters:
+    ///   - term: 学期，格式如 "25-26-1"，如果为空则获取当前学期
+    ///   - examType: 考试类型，默认为 "学分制考试"
+    /// - Returns: 考试安排列表
+    public func getExamArrangements(term: String? = nil, examType: String = "学分制考试") async throws -> [ExamArrangement] {
+        guard let authId = authorizationId else {
             throw CCZUError.notLoggedIn
+        }
+        
+        // 如果没有指定学期，获取当前学期
+        let examTerm: String
+        if let term = term {
+            examTerm = term
+        } else {
+            let terms = try await getTerms()
+            guard let currentTerm = terms.message.first?.term else {
+                throw CCZUError.missingData("No term found")
+            }
+            examTerm = currentTerm
         }
         
         let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/ks_xs_kslb")!
         
-        let requestData: [String: String] = [:]
+        let requestData: [String: String] = [
+            "xq": examTerm,
+            "yhdm": client.account.username,
+            "dm": examType,
+            "yhid": authId
+        ]
         
         let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: requestData)
         
@@ -150,6 +171,11 @@ public final class JwqywxApplication: @unchecked Sendable {
         let message = try decoder.decode(Message<ExamArrangement>.self, from: data)
         
         return message.message
+    }
+    
+    /// 获取当前学期的考试安排
+    public func getCurrentExamArrangements() async throws -> [ExamArrangement] {
+        return try await getExamArrangements()
     }
 }
 

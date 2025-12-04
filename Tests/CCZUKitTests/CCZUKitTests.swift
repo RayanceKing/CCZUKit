@@ -110,26 +110,34 @@ final class CCZUKitTests: XCTestCase {
     }
     
     func testExamArrangementDecoding() {
-        // 模拟考试安排JSON数据（使用虚拟数据）
+        // 模拟考试安排JSON数据（基于实际抓包数据结构）
         let json = """
         {
-            "kcdm": "CRS001",
-            "kcmc": "示例课程（考试）",
-            "xsbh": "CLASS001",
-            "xsbj": "班级001",
-            "xh": "STU001",
+            "id": 1,
+            "kch": "70091061",
+            "kcmc": "法理学(1)",
+            "kcdm": "70091061",
+            "xsbh": "0721",
+            "xsbj": "法学243",
+            "xh": "114514",
             "xm": "张三",
-            "jse": "教室101",
-            "kssj": "2025年06月19日 10:00--12:00",
+            "jse": null,
+            "kssj": null,
             "lb": "学分制考试",
-            "xklb": "正常修读",
-            "bmmc": "西校区",
-            "bz": "正常教学班",
-            "zc": 4,
-            "jc1": 3,
-            "jc2": 5,
-            "xq": "24-25-2",
-            "sjxx": "17,4,3,5,"
+            "xklb": "转专业重学",
+            "bmmc": "西太湖校区",
+            "bz": null,
+            "zc": null,
+            "jc1": null,
+            "jc2": null,
+            "xq": "25-26-1",
+            "sjxx": null,
+            "yx": 1,
+            "ksz": null,
+            "BH": "229903",
+            "jseid": 0,
+            "jkjs1": null,
+            "jkjs2": null
         }
         """
         
@@ -138,23 +146,31 @@ final class CCZUKitTests: XCTestCase {
         
         do {
             let exam = try decoder.decode(ExamArrangement.self, from: data)
-            XCTAssertEqual(exam.courseId, "CRS001")
-            XCTAssertEqual(exam.courseName, "示例课程（考试）")
-            XCTAssertEqual(exam.classId, "CLASS001")
-            XCTAssertEqual(exam.className, "班级001")
-            XCTAssertEqual(exam.studentId, "STU001")
+            XCTAssertEqual(exam.id, 1)
+            XCTAssertEqual(exam.courseId, "70091061")
+            XCTAssertEqual(exam.courseName, "法理学(1)")
+            XCTAssertEqual(exam.courseCode, "70091061")
+            XCTAssertEqual(exam.classId, "0721")
+            XCTAssertEqual(exam.className, "法学243")
+            XCTAssertEqual(exam.studentId, "114514")
             XCTAssertEqual(exam.studentName, "张三")
-            XCTAssertEqual(exam.examLocation, "教室101")
-            XCTAssertEqual(exam.examTime, "2025年06月19日 10:00--12:00")
+            XCTAssertNil(exam.examLocation)
+            XCTAssertNil(exam.examTime)
             XCTAssertEqual(exam.examType, "学分制考试")
-            XCTAssertEqual(exam.studyType, "正常修读")
-            XCTAssertEqual(exam.campus, "西校区")
-            XCTAssertEqual(exam.remark, "正常教学班")
-            XCTAssertEqual(exam.week, 4)
-            XCTAssertEqual(exam.startSlot, 3)
-            XCTAssertEqual(exam.endSlot, 5)
-            XCTAssertEqual(exam.term, "24-25-2")
-            XCTAssertEqual(exam.examDayInfo, "17,4,3,5,")
+            XCTAssertEqual(exam.studyType, "转专业重学")
+            XCTAssertEqual(exam.campus, "西太湖校区")
+            XCTAssertNil(exam.remark)
+            XCTAssertNil(exam.week)
+            XCTAssertNil(exam.startSlot)
+            XCTAssertNil(exam.endSlot)
+            XCTAssertEqual(exam.term, "25-26-1")
+            XCTAssertNil(exam.examDayInfo)
+            XCTAssertEqual(exam.isActive, 1)
+            XCTAssertNil(exam.examSeat)
+            XCTAssertEqual(exam.classNumber, "229903")
+            XCTAssertEqual(exam.teacherRoomId, 0)
+            XCTAssertNil(exam.startTeacherSlot)
+            XCTAssertNil(exam.endTeacherSlot)
         } catch {
             XCTFail("Failed to decode ExamArrangement: \(error)")
         }

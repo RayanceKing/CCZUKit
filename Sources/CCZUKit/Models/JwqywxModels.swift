@@ -153,8 +153,10 @@ public struct RawCourse: Sendable {
 
 // MARK: - 考试安排
 public struct ExamArrangement: Decodable, Sendable {
+    public let id: Int
     public let courseId: String
     public let courseName: String
+    public let courseCode: String
     public let classId: String
     public let className: String
     public let studentId: String
@@ -170,10 +172,18 @@ public struct ExamArrangement: Decodable, Sendable {
     public let endSlot: Int?
     public let term: String
     public let examDayInfo: String?
+    public let isActive: Int
+    public let examSeat: String?
+    public let classNumber: String
+    public let teacherRoomId: Int
+    public let startTeacherSlot: String?
+    public let endTeacherSlot: String?
     
     enum CodingKeys: String, CodingKey {
-        case courseId = "kcdm"
+        case id
+        case courseId = "kch"
         case courseName = "kcmc"
+        case courseCode = "kcdm"
         case classId = "xsbh"
         case className = "xsbj"
         case studentId = "xh"
@@ -189,6 +199,12 @@ public struct ExamArrangement: Decodable, Sendable {
         case endSlot = "jc2"
         case term = "xq"
         case examDayInfo = "sjxx"
+        case isActive = "yx"
+        case examSeat = "ksz"
+        case classNumber = "BH"
+        case teacherRoomId = "jseid"
+        case startTeacherSlot = "jkjs1"
+        case endTeacherSlot = "jkjs2"
     }
 }
 
