@@ -24,7 +24,10 @@ let package = Package(
         .target(
             name: "CCZUKit",
             dependencies: [],
-            path: "Sources/CCZUKit"
+            path: "Sources/CCZUKit",
+            resources: [
+                .process("calendar.json")
+            ]
         ),
         .testTarget(
             name: "CCZUKitTests",
