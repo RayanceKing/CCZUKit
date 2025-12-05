@@ -130,6 +130,24 @@ for exam in scheduledExams {
 }
 ```
 
+### 查询学生基本信息
+
+```swift
+// 获取学生基本信息
+let infoResponse = try await app.getStudentBasicInfo()
+if let info = infoResponse.message.first {
+    print("姓名: \(info.name)")
+    print("学号: \(info.studentNumber)")
+    print("专业: \(info.major)")
+    print("学院: \(info.collegeName)")
+    print("班级: \(info.className)")
+    print("年级: \(info.grade)")
+    print("学制: \(info.studyLength)年")
+    print("学籍情况: \(info.studentStatus)")
+    print("校区: \(info.campus)")
+}
+```
+
 ## API 文档
 
 ### 核心类型
@@ -166,6 +184,9 @@ try await app.getCurrentClassSchedule() -> [[RawCourse]]
 // 获取考试安排
 try await app.getExamArrangements(term: String? = nil, examType: String = "学分制考试") -> [ExamArrangement]
 try await app.getCurrentExamArrangements() -> [ExamArrangement]
+
+// 获取学生基本信息
+try await app.getStudentBasicInfo() -> Message<StudentBasicInfo>
 ```
 
 #### CalendarParser
@@ -217,6 +238,32 @@ public struct ExamArrangement {
     let examLocation: String?     // 考试地点
     let examTime: String?         // 考试时间
     let examType: String          // 考试类型(如"学分制考试")
+    let studyType: String         // 修读类型(如"主修")
+    let campus: String            // 校区
+    let term: String              // 学期
+    // ... 更多字段
+}
+```
+
+#### StudentBasicInfo - 学生基本信息
+```swift
+public struct StudentBasicInfo {
+    let name: String              // 姓名
+    let studentNumber: String     // 学号
+    let gender: String            // 性别
+    let birthday: String          // 出生日期
+    let collegeName: String       // 学院名称
+    let major: String             // 专业名称
+    let className: String         // 班级
+    let grade: Int                // 年级
+    let studyLength: String       // 学制
+    let studentStatus: String     // 学籍情况
+    let campus: String            // 校区名称
+    let phone: String             // 手机号
+    let dormitoryNumber: String   // 宿舍编号
+    // ... 更多字段
+}
+```
     let studyType: String         // 修读类型(如"正常修读"、"转专业重学")
     let campus: String            // 校区
     let remark: String?           // 备注

@@ -5,6 +5,7 @@ public final class JwqywxApplication: @unchecked Sendable {
     private let client: DefaultHTTPClient
     private var authorizationToken: String?
     private var authorizationId: String?
+    private var studentNumber: String?
     private var customHeaders: [String: String]
     
     public init(client: DefaultHTTPClient) {
@@ -49,6 +50,7 @@ public final class JwqywxApplication: @unchecked Sendable {
         // 保存token和id
         authorizationToken = "Bearer \(token)"
         authorizationId = userData.id
+        studentNumber = userData.userid
         
         // 更新headers：后续接口需要Authorization
         customHeaders["Authorization"] = authorizationToken
@@ -97,6 +99,30 @@ public final class JwqywxApplication: @unchecked Sendable {
         
         let decoder = JSONDecoder()
         return try decoder.decode(Message<Term>.self, from: data)
+    }
+    
+    // MARK: - 学生信息
+    
+    /// 获取学生基本信息
+    public func getStudentBasicInfo() async throws -> Message<StudentBasicInfo> {
+        guard let authId = authorizationId else {
+            throw CCZUError.notLoggedIn
+        }
+        
+        guard let stuNum = studentNumber else {
+            throw CCZUError.notLoggedIn
+        }
+        
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/xs_xh_jbxx")!
+        let requestData = [
+            "xh": stuNum,
+            "yhid": authId
+        ]
+        
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: requestData)
+        
+        let decoder = JSONDecoder()
+        return try decoder.decode(Message<StudentBasicInfo>.self, from: data)
     }
     
     // MARK: - 课表查询

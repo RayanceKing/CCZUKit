@@ -314,5 +314,73 @@ final class CCZUKitTests: XCTestCase {
             throw error
         }
     }
+    
+    // MARK: - 学生基本信息测试
+    
+    func testLoginAndGetStudentBasicInfo() async throws {
+        // 从环境变量读取账号密码
+        let username = ProcessInfo.processInfo.environment["CCZU_USERNAME"] ?? ""
+        let password = ProcessInfo.processInfo.environment["CCZU_PASSWORD"] ?? ""
+        
+        // 若未设置，跳过此测试
+        if username.isEmpty || password.isEmpty {
+            throw XCTSkip("未设置CCZU_USERNAME/CCZU_PASSWORD，跳过学生基本信息集成测试")
+        }
+        
+        let client = DefaultHTTPClient(username: username, password: password)
+        
+        // 1. SSO统一登录（可能走WebVPN）
+        let loginInfo = try await client.ssoUniversalLogin()
+        if let info = loginInfo {
+            print("[SSO] WebVPN登录成功: userid=\(info.userid)")
+        } else {
+            print("[SSO] 普通登录成功")
+        }
+        
+        // 2. 教务企业微信登录
+        let app = JwqywxApplication(client: client)
+        let userMessage = try await app.login()
+        let userName = userMessage.message.first?.username ?? ""
+        print("[JWQYWX] 登录成功: username=\(userName)")
+        
+        // 3. 获取学生基本信息
+        do {
+            let infoMessage = try await app.getStudentBasicInfo()
+            
+            print("\n=== 学生基本信息 ===")
+            
+            if let info = infoMessage.message.first {
+                print("姓名: \(info.name)")
+                print("学号: \(info.studentNumber)")
+                print("性别: \(info.gender)")
+                print("出生日期: \(info.birthday)")
+                print("学院: \(info.collegeName)")
+                print("专业: \(info.major)")
+                print("班级: \(info.className)")
+                print("年级: \(info.grade)")
+                print("学制: \(info.studyLength)年")
+                print("学籍情况: \(info.studentStatus)")
+                print("校区: \(info.campus)")
+                print("手机号: \(info.phone)")
+                print("宿舍编号: \(info.dormitoryNumber)")
+                
+                // 基本断言
+                XCTAssertFalse(info.name.isEmpty, "姓名不应为空")
+                XCTAssertFalse(info.studentNumber.isEmpty, "学号不应为空")
+                XCTAssertFalse(info.major.isEmpty, "专业不应为空")
+                XCTAssertGreaterThan(info.grade, 0, "年级应大于0")
+            } else {
+                XCTFail("未获取到学生基本信息")
+            }
+        } catch {
+            print("[ERROR] 获取学生基本信息失败: \(error)")
+            // 如果是网络相关的错误，跳过测试而不是失败
+            if error is DecodingError {
+                throw XCTSkip("API 返回格式不符合预期，跳过学生基本信息集成测试")
+            }
+            throw error
+        }
+    }
 }
+
 

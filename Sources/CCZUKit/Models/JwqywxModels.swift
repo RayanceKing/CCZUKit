@@ -208,6 +208,47 @@ public struct ExamArrangement: Decodable, Sendable {
     }
 }
 
+// MARK: - 学生基本信息
+public struct StudentBasicInfo: Decodable, Sendable {
+    public let name: String                    // 姓名
+    public let major: String                   // 专业名称
+    public let genderCode: String              // 性别代码
+    public let phone: String                   // 手机号
+    public let birthday: String                // 出生日期
+    public let className: String               // 班级
+    public let studentId: String               // 学生ID
+    public let collegeName: String             // 学院名称
+    public let gender: String                  // 性别
+    public let grade: Int                      // 年级
+    public let campus: String                  // 校区名称
+    public let majorCode: String               // 专业代码
+    public let classCode: String               // 班级号
+    public let studyLength: String             // 学制
+    public let studentStatus: String           // 学籍情况
+    public let studentNumber: String           // 学号
+    public let dormitoryNumber: String         // 宿舍编号
+    
+    enum CodingKeys: String, CodingKey {
+        case name = "xm"
+        case major = "zymc"
+        case genderCode = "xbdm"
+        case phone = "smscode"
+        case birthday = "csny"
+        case className = "bj"
+        case studentId = "xsid"
+        case collegeName = "xbmc"
+        case gender = "xb"
+        case grade = "nj"
+        case campus = "bmmc"
+        case majorCode = "zydm"
+        case classCode = "bh"
+        case studyLength = "xz"
+        case studentStatus = "xjqk"
+        case studentNumber = "xh"
+        case dormitoryNumber = "shbh"
+    }
+}
+
 // MARK: - Elink登录信息
 public struct ElinkLoginInfo: Decodable, Sendable {
     public let userid: String

@@ -73,7 +73,26 @@ func exampleUsage() async throws {
         print("  \(term.term)")
     }
     
-    // 8. 查询考试安排
+    // 8. 查询学生基本信息
+    print("\n=== 学生基本信息 ===")
+    let infoResponse = try await app.getStudentBasicInfo()
+    if let info = infoResponse.message.first {
+        print("姓名: \(info.name)")
+        print("学号: \(info.studentNumber)")
+        print("性别: \(info.gender)")
+        print("出生日期: \(info.birthday)")
+        print("学院: \(info.collegeName)")
+        print("专业: \(info.major)")
+        print("班级: \(info.className)")
+        print("年级: \(info.grade)")
+        print("学制: \(info.studyLength)年")
+        print("学籍情况: \(info.studentStatus)")
+        print("校区: \(info.campus)")
+        print("手机号: \(info.phone)")
+        print("宿舍编号: \(info.dormitoryNumber)")
+    }
+    
+    // 9. 查询考试安排
     print("\n=== 查询考试安排 ===")
     let exams = try await app.getCurrentExamArrangements()
     
