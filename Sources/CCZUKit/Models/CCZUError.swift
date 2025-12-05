@@ -5,6 +5,8 @@ public enum CCZUError: LocalizedError {
     case networkError(Error)
     case invalidResponse
     case loginFailed(String)
+    case invalidCredentials      // 账号或密码错误
+    case ssoLoginFailed(String)  // SSO登录失败
     case notLoggedIn
     case decodingError(Error)
     case missingData(String)
@@ -18,6 +20,10 @@ public enum CCZUError: LocalizedError {
             return "无效的响应"
         case .loginFailed(let reason):
             return "登录失败: \(reason)"
+        case .invalidCredentials:
+            return "账号或密码错误，请检查输入"
+        case .ssoLoginFailed(let reason):
+            return "SSO登录失败: \(reason)"
         case .notLoggedIn:
             return "未登录"
         case .decodingError(let error):

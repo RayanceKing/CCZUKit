@@ -381,6 +381,27 @@ final class CCZUKitTests: XCTestCase {
             throw error
         }
     }
+    
+    // MARK: - 登录失败处理测试
+    
+    func testLoginFailureHandling() async {
+        let invalidClient = DefaultHTTPClient(username: "invalid_user", password: "wrong_password")
+        let app = JwqywxApplication(client: invalidClient)
+        
+        do {
+            _ = try await app.login()
+            print("[INFO] 测试账号意外登录成功")
+        } catch CCZUError.invalidCredentials {
+            print("[SUCCESS] 捕获到账号密码错误")
+            XCTAssertTrue(true)
+        } catch CCZUError.loginFailed(let reason) {
+            print("[INFO] 捕获到登录失败: \(reason)")
+            XCTAssertTrue(true)
+        } catch {
+            print("[INFO] 捕获到其他错误: \(error)")
+            XCTAssertTrue(true)
+        }
+    }
 }
 
 

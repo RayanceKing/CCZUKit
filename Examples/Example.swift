@@ -128,6 +128,10 @@ func exampleWithErrorHandling() async {
         let grades = try await app.getGrades()
         print("成绩查询成功: \(grades.message.count) 门课程")
         
+    } catch CCZUError.invalidCredentials {
+        print("错误: 账号或密码错误，请检查输入")
+    } catch CCZUError.ssoLoginFailed(let reason) {
+        print("错误: SSO登录失败 - \(reason)")
     } catch CCZUError.notLoggedIn {
         print("错误: 未登录,请先登录")
     } catch CCZUError.loginFailed(let reason) {

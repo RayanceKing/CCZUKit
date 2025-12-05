@@ -33,18 +33,23 @@ public final class JwqywxApplication: @unchecked Sendable {
         let (data, response) = try await client.postJSON(url: url, headers: customHeaders, json: loginData)
         
         guard response.statusCode == 200 else {
-            throw CCZUError.loginFailed("Status code: \(response.statusCode)")
+            throw CCZUError.loginFailed("HTTP Status code: \(response.statusCode)")
         }
         
         let decoder = JSONDecoder()
         let message = try decoder.decode(Message<LoginUserData>.self, from: data)
         
         guard let token = message.token else {
-            throw CCZUError.loginFailed("No token received")
+            throw CCZUError.loginFailed("未收到认证令牌")
         }
         
         guard let userData = message.message.first else {
-            throw CCZUError.loginFailed("No user data received")
+            throw CCZUError.loginFailed("未收到用户数据")
+        }
+        
+        // 检查账号密码是否错误：用户ID为空表示登录失败
+        if userData.id.isEmpty || userData.userid.isEmpty {
+            throw CCZUError.invalidCredentials
         }
         
         // 保存token和id

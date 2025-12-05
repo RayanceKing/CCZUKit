@@ -286,6 +286,12 @@ public struct StudentBasicInfo {
 do {
     let grades = try await app.getGrades()
     // 处理成功
+} catch CCZUError.invalidCredentials {
+    // 账号或密码错误
+    print("账号或密码错误，请检查输入")
+} catch CCZUError.ssoLoginFailed(let reason) {
+    // SSO登录失败
+    print("SSO登录失败: \(reason)")
 } catch CCZUError.notLoggedIn {
     print("未登录,请先登录")
 } catch CCZUError.loginFailed(let reason) {
@@ -296,6 +302,18 @@ do {
     print("未知错误: \(error)")
 }
 ```
+
+### 常见错误及处理
+
+| 错误类型 | 含义 | 处理建议 |
+|---------|------|---------|
+| `invalidCredentials` | 账号或密码错误 | 检查学号和密码是否正确输入 |
+| `ssoLoginFailed` | SSO登录失败 | 检查网络连接或SSO服务器状态 |
+| `loginFailed` | 登录失败 | 检查网络连接或服务器状态 |
+| `networkError` | 网络错误 | 检查网络连接是否正常 |
+| `notLoggedIn` | 未登录 | 调用 `login()` 方法进行登录 |
+| `decodingError` | 数据解析错误 | API返回格式可能已更新，请检查 |
+| `missingData` | 缺少数据 | 确保当前学期数据完整 |
 
 ## 与 Rust 版本的区别
 

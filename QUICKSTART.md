@@ -215,6 +215,12 @@ struct ContentView: View {
 do {
     let grades = try await app.getGrades()
     // 处理成功情况
+} catch CCZUError.invalidCredentials {
+    // 账号或密码错误
+    print("账号或密码错误，请检查输入")
+} catch CCZUError.ssoLoginFailed(let reason) {
+    // SSO登录失败
+    print("SSO登录失败: \(reason)")
 } catch CCZUError.notLoggedIn {
     // 未登录
 } catch CCZUError.loginFailed(let reason) {

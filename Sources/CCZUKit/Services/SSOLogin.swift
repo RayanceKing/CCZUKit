@@ -43,7 +43,7 @@ extension DefaultHTTPClient: SSOLogin {
     private func handleWebVPNLogin(from response: HTTPURLResponse) async throws -> ElinkLoginInfo? {
         guard let location = response.value(forHTTPHeaderField: "Location"),
               let redirectURL = URL(string: location) else {
-            throw CCZUError.loginFailed("Missing redirect location")
+            throw CCZUError.ssoLoginFailed("缺少重定向地址")
         }
         
         // 递归处理重定向
@@ -61,9 +61,10 @@ extension DefaultHTTPClient: SSOLogin {
         // 提交登录表单
         let (_, loginResponse) = try await postForm(url: redirectURL, form: form)
         
+        // 检查登录响应是否返回了错误页面（没有Location表示登录失败）
         guard let loginLocation = loginResponse.value(forHTTPHeaderField: "Location"),
               let loginRedirectURL = URL(string: loginLocation) else {
-            throw CCZUError.loginFailed("Login redirect failed")
+            throw CCZUError.invalidCredentials
         }
         
         var headers = CCZUConstants.defaultHeaders
@@ -83,14 +84,14 @@ extension DefaultHTTPClient: SSOLogin {
             return loginInfo
         }
         
-        throw CCZUError.loginFailed("Failed to extract login info")
+        throw CCZUError.ssoLoginFailed("无法提取登录信息")
     }
     
     /// SSO服务登录
     public func ssoServiceLogin(service: String) async throws -> (Data, HTTPURLResponse) {
         let urlString = service.isEmpty ? CCZUConstants.rootSSOLogin : "\(CCZUConstants.rootSSOLogin)?service=\(service)"
         guard let url = URL(string: urlString) else {
-            throw CCZUError.unknown("Invalid URL")
+            throw CCZUError.unknown("无效的URL")
         }
         
         let (data, response) = try await get(url: url)
@@ -122,11 +123,17 @@ extension DefaultHTTPClient: SSOLogin {
         }
         
         if loginResponse.statusCode == 200 {
+            // 检查响应内容中是否包含登录失败的提示（账号密码错误）
+            if let responseHtml = String(data: data, encoding: .utf8),
+               responseHtml.contains("用户名不存在") || responseHtml.contains("密码错误") || 
+               responseHtml.contains("用户名或密码错误") {
+                throw CCZUError.invalidCredentials
+            }
             // 视为登录成功，返回当前页面响应
             return (Data(), loginResponse)
         }
         
-        throw CCZUError.loginFailed("Service login failed")
+        throw CCZUError.ssoLoginFailed("SSO服务登录失败")
     }
     
     /// 递归处理重定向
