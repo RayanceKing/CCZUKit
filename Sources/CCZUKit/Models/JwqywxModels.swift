@@ -274,6 +274,20 @@ public struct EvaluatableClass: Decodable, Sendable {
         case evaluationId = "pjid"
         case teacherId = "jsid"
     }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        classId = try container.decode(String.self, forKey: .classId).trimmingCharacters(in: .whitespaces)
+        courseCode = try container.decode(String.self, forKey: .courseCode).trimmingCharacters(in: .whitespaces)
+        courseName = try container.decode(String.self, forKey: .courseName).trimmingCharacters(in: .whitespaces)
+        courseSerial = try container.decode(String.self, forKey: .courseSerial).trimmingCharacters(in: .whitespaces)
+        categoryCode = try container.decode(String.self, forKey: .categoryCode).trimmingCharacters(in: .whitespaces)
+        teacherCode = try container.decode(String.self, forKey: .teacherCode).trimmingCharacters(in: .whitespaces)
+        teacherName = try container.decode(String.self, forKey: .teacherName).trimmingCharacters(in: .whitespaces)
+        evaluationStatus = try container.decodeIfPresent(String.self, forKey: .evaluationStatus)?.trimmingCharacters(in: .whitespaces)
+        evaluationId = try container.decode(Int.self, forKey: .evaluationId)
+        teacherId = try container.decode(String.self, forKey: .teacherId).trimmingCharacters(in: .whitespaces)
+    }
 }
 
 // MARK: - 已提交的评价信息
@@ -300,6 +314,20 @@ public struct SubmittedEvaluation: Decodable, Sendable {
         case overallScore = "zhdf"
         case scores = "pjjg"
         case comments = "yjjy"
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        term = try container.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
+        evaluationId = try container.decode(String.self, forKey: .evaluationId).trimmingCharacters(in: .whitespaces)
+        studentNumber = try container.decode(String.self, forKey: .studentNumber).trimmingCharacters(in: .whitespaces)
+        teacherCode = try container.decode(String.self, forKey: .teacherCode).trimmingCharacters(in: .whitespaces)
+        teacherName = try container.decode(String.self, forKey: .teacherName).trimmingCharacters(in: .whitespaces)
+        courseCode = try container.decode(String.self, forKey: .courseCode).trimmingCharacters(in: .whitespaces)
+        courseName = try container.decode(String.self, forKey: .courseName).trimmingCharacters(in: .whitespaces)
+        overallScore = try container.decode(Int.self, forKey: .overallScore)
+        scores = try container.decode(String.self, forKey: .scores).trimmingCharacters(in: .whitespaces)
+        comments = try container.decode(String.self, forKey: .comments).trimmingCharacters(in: .whitespaces)
     }
 }
 

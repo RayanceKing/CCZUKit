@@ -434,7 +434,7 @@ final class CCZUKitTests: XCTestCase {
             let evaluatedCourses = Set(submittedEvaluations.map { $0.courseCode })
             
             if !classes.isEmpty {
-                for (index, evaluatableClass) in classes.prefix(10).enumerated() {
+                for (index, evaluatableClass) in classes.enumerated() {
                     let isEvaluated = evaluatedCourses.contains(evaluatableClass.courseCode)
                     
                     print("\n课程\(index + 1) [\(isEvaluated ? "已评价" : "未评价")]:")

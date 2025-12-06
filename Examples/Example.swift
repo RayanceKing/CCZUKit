@@ -120,13 +120,18 @@ func exampleUsage() async throws {
     let evaluatableClasses = try await app.getCurrentEvaluatableClasses()
     print("当前学期可评价课程数: \(evaluatableClasses.count)")
     
+    // 获取已提交评价用于判断评价状态
+    let submittedEvaluations = try await app.getCurrentSubmittedEvaluations()
+    let evaluatedCourses = Set(submittedEvaluations.map { $0.courseCode })
+    
     if !evaluatableClasses.isEmpty {
         for (index, evaluatableClass) in evaluatableClasses.prefix(3).enumerated() {
+            let isEvaluated = evaluatedCourses.contains(evaluatableClass.courseCode)
+            
             print("\n课程\(index + 1): \(evaluatableClass.courseName)")
             print("  教师: \(evaluatableClass.teacherName)")
             print("  班级号: \(evaluatableClass.classId)")
-            print("  评价ID: \(evaluatableClass.evaluationId)")
-            print("  评价状态: \(evaluatableClass.evaluationStatus ?? "未评价")")
+            print("  状态: \(isEvaluated ? "已评价" : "未评价")")
         }
         
         // 提交评价示例
@@ -167,11 +172,15 @@ func exampleTeacherEvaluation() async throws {
         return
     }
     
+    // 获取已提交评价用于判断评价状态
+    let submittedEvaluations = try await app.getCurrentSubmittedEvaluations()
+    let evaluatedCourses = Set(submittedEvaluations.map { $0.courseCode })
+    
     for (index, evaluatableClass) in evaluatableClasses.enumerated() {
-        print("\n[\(index + 1)] \(evaluatableClass.courseName)")
+        let isEvaluated = evaluatedCourses.contains(evaluatableClass.courseCode)
+        print("\n[\(index + 1)] \(evaluatableClass.courseName) [\(isEvaluated ? "已评价" : "未评价")]")
         print("   教师: \(evaluatableClass.teacherName)")
-        print("   学分: \(evaluatableClass.credit)")
-        print("   评价状态: \(evaluatableClass.evaluationStatus)")
+        print("   班级号: \(evaluatableClass.classId)")
     }
     
     // 提交评价
