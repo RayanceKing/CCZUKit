@@ -244,6 +244,34 @@ public final class JwqywxApplication: @unchecked Sendable {
         return try await getEvaluatableClasses(term: currentTerm)
     }
     
+    /// 获取指定学期已提交的评价信息
+    /// - Parameter term: 学期，格式如 "25-26-1"
+    /// - Returns: 已提交的评价列表
+    public func getSubmittedEvaluations(term: String) async throws -> [SubmittedEvaluation] {
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/pj_xh_pjxx")!
+        
+        let requestData: [String: String] = [
+            "pjxq": term,
+            "xh": client.account.username
+        ]
+        
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: requestData)
+        
+        let decoder = JSONDecoder()
+        let message = try decoder.decode(Message<SubmittedEvaluation>.self, from: data)
+        
+        return message.message
+    }
+    
+    /// 获取当前学期已提交的评价信息
+    public func getCurrentSubmittedEvaluations() async throws -> [SubmittedEvaluation] {
+        let terms = try await getTerms()
+        guard let currentTerm = terms.message.first?.term else {
+            throw CCZUError.missingData("No term found")
+        }
+        return try await getSubmittedEvaluations(term: currentTerm)
+    }
+    
     /// 提交教师评价
     /// - Parameters:
     ///   - term: 学期，格式如 "25-26-1"

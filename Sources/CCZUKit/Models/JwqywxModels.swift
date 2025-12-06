@@ -276,6 +276,33 @@ public struct EvaluatableClass: Decodable, Sendable {
     }
 }
 
+// MARK: - 已提交的评价信息
+public struct SubmittedEvaluation: Decodable, Sendable {
+    public let term: String                    // 学期 (xq)
+    public let evaluationId: String            // 评价ID (pjid)
+    public let studentNumber: String           // 学号 (xh)
+    public let teacherCode: String             // 教师代码 (jsdm)
+    public let teacherName: String             // 教师名称 (jsmc)
+    public let courseCode: String              // 课程代码 (kcdm)
+    public let courseName: String              // 课程名称 (kcmc)
+    public let overallScore: Int               // 总体评分 (zhdf)
+    public let scores: String                  // 各项评分 (pjjg)
+    public let comments: String                // 评价意见 (yjjy)
+    
+    enum CodingKeys: String, CodingKey {
+        case term = "xq"
+        case evaluationId = "pjid"
+        case studentNumber = "xh"
+        case teacherCode = "jsdm"
+        case teacherName = "jsmc"
+        case courseCode = "kcdm"
+        case courseName = "kcmc"
+        case overallScore = "zhdf"
+        case scores = "pjjg"
+        case comments = "yjjy"
+    }
+}
+
 // MARK: - Elink登录信息
 public struct ElinkLoginInfo: Decodable, Sendable {
     public let userid: String

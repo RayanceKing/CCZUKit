@@ -426,16 +426,21 @@ final class CCZUKitTests: XCTestCase {
             
             print("可评价课程数量: \(classes.count)")
             
+            // 获取已提交的评价信息用于判断评价状态
+            let submittedEvaluations = try await app.getCurrentSubmittedEvaluations()
+            print("已提交评价数量: \(submittedEvaluations.count)")
+            
+            // 创建已评价课程代码集合用于快速查找
+            let evaluatedCourses = Set(submittedEvaluations.map { $0.courseCode })
+            
             if !classes.isEmpty {
-                for (index, evaluatableClass) in classes.prefix(3).enumerated() {
-                    print("\n课程\(index + 1):")
-                    print("- 课程代码: \(evaluatableClass.courseCode)")
+                for (index, evaluatableClass) in classes.prefix(10).enumerated() {
+                    let isEvaluated = evaluatedCourses.contains(evaluatableClass.courseCode)
+                    
+                    print("\n课程\(index + 1) [\(isEvaluated ? "已评价" : "未评价")]:")
                     print("- 课程名称: \(evaluatableClass.courseName)")
-                    print("- 教师代码: \(evaluatableClass.teacherCode)")
                     print("- 教师名称: \(evaluatableClass.teacherName)")
-                    print("- 班级号: \(evaluatableClass.classId)")
-                    print("- 课程序列号: \(evaluatableClass.courseSerial)")
-                    print("- 评价状态: \(evaluatableClass.evaluationStatus ?? "未评价")")
+                    print("- 课程代码: \(evaluatableClass.courseCode)")
                     
                     // 基本断言
                     XCTAssertFalse(evaluatableClass.courseCode.isEmpty, "课程代码不应为空")

@@ -157,8 +157,17 @@ let evaluatableClasses = try await app.getCurrentEvaluatableClasses()
 for evaluatableClass in evaluatableClasses {
     print("课程: \(evaluatableClass.courseName)")
     print("教师: \(evaluatableClass.teacherName)")
-    print("学分: \(evaluatableClass.credit)")
-    print("状态: \(evaluatableClass.evaluationStatus)")
+    print("班级号: \(evaluatableClass.classId)")
+    print("评价ID: \(evaluatableClass.evaluationId)")
+}
+
+// 获取已提交的评价信息
+let submittedEvaluations = try await app.getCurrentSubmittedEvaluations()
+let evaluatedCourses = Set(submittedEvaluations.map { $0.courseCode })
+
+for evaluatableClass in evaluatableClasses {
+    let isEvaluated = evaluatedCourses.contains(evaluatableClass.courseCode)
+    print("\(evaluatableClass.courseName) - \(isEvaluated ? "已评价" : "未评价")")
 }
 
 // 提交教师评价
@@ -219,6 +228,10 @@ try await app.getStudentBasicInfo() -> Message<StudentBasicInfo>
 // 获取可评价课程列表
 try await app.getEvaluatableClasses(term: String) -> [EvaluatableClass]
 try await app.getCurrentEvaluatableClasses() -> [EvaluatableClass]
+
+// 获取已提交的评价信息
+try await app.getSubmittedEvaluations(term: String) -> [SubmittedEvaluation]
+try await app.getCurrentSubmittedEvaluations() -> [SubmittedEvaluation]
 
 // 提交教师评价
 try await app.submitTeacherEvaluation(
@@ -322,6 +335,22 @@ public struct EvaluatableClass {
 }
 ```
 
+#### SubmittedEvaluation - 已提交的评价
+```swift
+public struct SubmittedEvaluation {
+    let term: String              // 学期
+    let evaluationId: String      // 评价ID
+    let studentNumber: String     // 学号
+    let teacherCode: String       // 教师代码
+    let teacherName: String       // 教师名称
+    let courseCode: String        // 课程代码
+    let courseName: String        // 课程名称
+    let overallScore: Int         // 总体评分
+    let scores: String            // 各项评分
+    let comments: String          // 评价意见
+}
+```
+
 
 ## 错误处理
 
@@ -381,7 +410,7 @@ do {
 
 ## 许可证
 
-MIT License
+GNU License
 
 ## 相关项目
 
