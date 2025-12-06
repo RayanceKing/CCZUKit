@@ -122,7 +122,7 @@ final class CCZUKitTests: XCTestCase {
             "xh": "114514",
             "xm": "张三",
             "jse": null,
-            "kssj": null,
+            "sj": null,
             "lb": "学分制考试",
             "xklb": "转专业重学",
             "bmmc": "西太湖校区",
@@ -137,7 +137,8 @@ final class CCZUKitTests: XCTestCase {
             "BH": "229903",
             "jseid": 0,
             "jkjs1": null,
-            "jkjs2": null
+            "jkjs2": null,
+            "bj": "法学243"
         }
         """
         
@@ -171,6 +172,7 @@ final class CCZUKitTests: XCTestCase {
             XCTAssertEqual(exam.teacherRoomId, 0)
             XCTAssertNil(exam.startTeacherSlot)
             XCTAssertNil(exam.endTeacherSlot)
+            XCTAssertEqual(exam.classShortName, "法学243")
         } catch {
             XCTFail("Failed to decode ExamArrangement: \(error)")
         }

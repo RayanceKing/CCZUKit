@@ -173,11 +173,12 @@ public struct ExamArrangement: Decodable, Sendable {
     public let term: String
     public let examDayInfo: String?
     public let isActive: Int
-    public let examSeat: String?
+    public let examSeat: Int?
     public let classNumber: String
     public let teacherRoomId: Int
-    public let startTeacherSlot: String?
-    public let endTeacherSlot: String?
+    public let startTeacherSlot: Int?
+    public let endTeacherSlot: Int?
+    public let classShortName: String          // 班级简称
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -189,7 +190,7 @@ public struct ExamArrangement: Decodable, Sendable {
         case studentId = "xh"
         case studentName = "xm"
         case examLocation = "jse"
-        case examTime = "kssj"
+        case examTime = "sj"           // 实际API使用 "sj" 而不是 "kssj"
         case examType = "lb"
         case studyType = "xklb"
         case campus = "bmmc"
@@ -205,6 +206,37 @@ public struct ExamArrangement: Decodable, Sendable {
         case teacherRoomId = "jseid"
         case startTeacherSlot = "jkjs1"
         case endTeacherSlot = "jkjs2"
+        case classShortName = "bj"
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        courseId = try container.decode(String.self, forKey: .courseId).trimmingCharacters(in: .whitespaces)
+        courseName = try container.decode(String.self, forKey: .courseName).trimmingCharacters(in: .whitespaces)
+        courseCode = try container.decode(String.self, forKey: .courseCode).trimmingCharacters(in: .whitespaces)
+        classId = try container.decode(String.self, forKey: .classId).trimmingCharacters(in: .whitespaces)
+        className = try container.decode(String.self, forKey: .className).trimmingCharacters(in: .whitespaces)
+        studentId = try container.decode(String.self, forKey: .studentId).trimmingCharacters(in: .whitespaces)
+        studentName = try container.decode(String.self, forKey: .studentName).trimmingCharacters(in: .whitespaces)
+        examLocation = try container.decodeIfPresent(String.self, forKey: .examLocation)?.trimmingCharacters(in: .whitespaces)
+        examTime = try container.decodeIfPresent(String.self, forKey: .examTime)?.trimmingCharacters(in: .whitespaces)
+        examType = try container.decode(String.self, forKey: .examType).trimmingCharacters(in: .whitespaces)
+        studyType = try container.decode(String.self, forKey: .studyType).trimmingCharacters(in: .whitespaces)
+        campus = try container.decode(String.self, forKey: .campus).trimmingCharacters(in: .whitespaces)
+        remark = try container.decodeIfPresent(String.self, forKey: .remark)?.trimmingCharacters(in: .whitespaces)
+        week = try container.decodeIfPresent(Int.self, forKey: .week)
+        startSlot = try container.decodeIfPresent(Int.self, forKey: .startSlot)
+        endSlot = try container.decodeIfPresent(Int.self, forKey: .endSlot)
+        term = try container.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
+        examDayInfo = try container.decodeIfPresent(String.self, forKey: .examDayInfo)?.trimmingCharacters(in: .whitespaces)
+        isActive = try container.decode(Int.self, forKey: .isActive)
+        examSeat = try container.decodeIfPresent(Int.self, forKey: .examSeat)
+        classNumber = try container.decode(String.self, forKey: .classNumber).trimmingCharacters(in: .whitespaces)
+        teacherRoomId = try container.decode(Int.self, forKey: .teacherRoomId)
+        startTeacherSlot = try container.decodeIfPresent(Int.self, forKey: .startTeacherSlot)
+        endTeacherSlot = try container.decodeIfPresent(Int.self, forKey: .endTeacherSlot)
+        classShortName = try container.decode(String.self, forKey: .classShortName).trimmingCharacters(in: .whitespaces)
     }
 }
 
