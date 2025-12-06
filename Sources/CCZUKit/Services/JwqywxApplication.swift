@@ -208,6 +208,82 @@ public final class JwqywxApplication: @unchecked Sendable {
     public func getCurrentExamArrangements() async throws -> [ExamArrangement] {
         return try await getExamArrangements()
     }
+    
+    // MARK: - 教师评价
+    
+    /// 获取指定学期可评价的课程列表
+    /// - Parameter term: 学期，格式如 "25-26-1"
+    /// - Returns: 可评价课程列表
+    public func getEvaluatableClasses(term: String) async throws -> [EvaluatableClass] {
+        guard let authId = authorizationId else {
+            throw CCZUError.notLoggedIn
+        }
+        
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/pj_xspj_kcxx")!
+        
+        let requestData: [String: String] = [
+            "pjxq": term,
+            "xh": client.account.username,
+            "yhid": authId
+        ]
+        
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: requestData)
+        
+        let decoder = JSONDecoder()
+        let message = try decoder.decode(Message<EvaluatableClass>.self, from: data)
+        
+        return message.message
+    }
+    
+    /// 获取当前学期可评价的课程列表
+    public func getCurrentEvaluatableClasses() async throws -> [EvaluatableClass] {
+        let terms = try await getTerms()
+        guard let currentTerm = terms.message.first?.term else {
+            throw CCZUError.missingData("No term found")
+        }
+        return try await getEvaluatableClasses(term: currentTerm)
+    }
+    
+    /// 提交教师评价
+    /// - Parameters:
+    ///   - term: 学期，格式如 "25-26-1"
+    ///   - evaluatableClass: 可评价课程信息
+    ///   - overallScore: 总体评分，建议值为90
+    ///   - scores: 各项评分数组，例如 [100,80,100,80,100,80]
+    ///   - comments: 评价意见
+    public func submitTeacherEvaluation(
+        term: String,
+        evaluatableClass: EvaluatableClass,
+        overallScore: Int,
+        scores: [Int],
+        comments: String
+    ) async throws {
+        guard let authId = authorizationId else {
+            throw CCZUError.notLoggedIn
+        }
+        
+        // 将分数数组转换为逗号分隔的字符串，末尾加逗号
+        let scoresString = scores.map(String.init).joined(separator: ",") + ","
+        
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/pj_insert_xspj")!
+        
+        let requestData: [String: String] = [
+            "pjxq": term,
+            "yhdm": client.account.username,
+            "jsdm": evaluatableClass.teacherCode,
+            "kcdm": evaluatableClass.courseCode,
+            "zhdf": String(overallScore),
+            "pjjg": scoresString,
+            "yjjy": comments,
+            "yhid": authId
+        ]
+        
+        let (_, response) = try await client.postJSON(url: url, headers: customHeaders, json: requestData)
+        
+        guard response.statusCode == 200 else {
+            throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
+        }
+    }
 }
 
 // MARK: - 课表行数据

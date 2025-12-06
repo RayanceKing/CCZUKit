@@ -134,6 +134,24 @@ struct MyApp {
             let scheduledExams = exams.filter { $0.examTime != nil }
             print("\n📝 考试安排: \(scheduledExams.count)/\(exams.count)门已安排")
             
+            // 8. 教师评价
+            let evaluatableClasses = try await app.getCurrentEvaluatableClasses()
+            print("\n⭐ 可评价课程: \(evaluatableClasses.count)门")
+            
+            if let classToEvaluate = evaluatableClasses.first {
+                let terms = try await app.getTerms()
+                if let currentTerm = terms.message.first?.term {
+                    try await app.submitTeacherEvaluation(
+                        term: currentTerm,
+                        evaluatableClass: classToEvaluate,
+                        overallScore: 90,
+                        scores: [100, 80, 100, 80, 100, 80],
+                        comments: "教学质量优秀"
+                    )
+                    print("✓ 评价已提交")
+                }
+            }
+            
         } catch {
             print("❌ 错误: \(error)")
         }
@@ -234,6 +252,48 @@ do {
     print("未知错误: \(error)")
 }
 ```
+
+## 教师评价
+
+### 获取可评价课程列表
+
+```swift
+// 获取当前学期可评价的课程
+let evaluatableClasses = try await app.getCurrentEvaluatableClasses()
+
+for evaluatableClass in evaluatableClasses {
+    print("课程: \(evaluatableClass.courseName)")
+    print("教师: \(evaluatableClass.teacherName)")
+    print("学分: \(evaluatableClass.credit)")
+    print("评价状态: \(evaluatableClass.evaluationStatus)")
+    print("---")
+}
+```
+
+### 提交评价
+
+```swift
+// 提交教师评价
+let terms = try await app.getTerms()
+guard let currentTerm = terms.message.first?.term else { return }
+
+if let classToEvaluate = evaluatableClasses.first {
+    try await app.submitTeacherEvaluation(
+        term: currentTerm,
+        evaluatableClass: classToEvaluate,
+        overallScore: 90,              // 总体评分
+        scores: [100, 80, 100, 80, 100, 80],  // 各项评分
+        comments: "教学质量优秀，建议继续改进"
+    )
+    print("✓ 评价已提交成功")
+}
+```
+
+### 评分说明
+
+- **overallScore**: 总体评分,建议90分
+- **scores**: 各项评分数组,常用值为 `[100, 80, 100, 80, 100, 80]`
+- **comments**: 评价意见,自由输入,最多可为空字符串
 
 ## 注意事项
 

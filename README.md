@@ -148,6 +148,34 @@ if let info = infoResponse.message.first {
 }
 ```
 
+### 教师评价
+
+```swift
+// 获取当前学期可评价的课程列表
+let evaluatableClasses = try await app.getCurrentEvaluatableClasses()
+
+for evaluatableClass in evaluatableClasses {
+    print("课程: \(evaluatableClass.courseName)")
+    print("教师: \(evaluatableClass.teacherName)")
+    print("学分: \(evaluatableClass.credit)")
+    print("状态: \(evaluatableClass.evaluationStatus)")
+}
+
+// 提交教师评价
+let terms = try await app.getTerms()
+if let currentTerm = terms.message.first?.term,
+   let classToEvaluate = evaluatableClasses.first {
+    try await app.submitTeacherEvaluation(
+        term: currentTerm,
+        evaluatableClass: classToEvaluate,
+        overallScore: 90,
+        scores: [100, 80, 100, 80, 100, 80],
+        comments: "教学质量优秀"
+    )
+    print("评价已提交")
+}
+```
+
 ## API 文档
 
 ### 核心类型
@@ -187,6 +215,19 @@ try await app.getCurrentExamArrangements() -> [ExamArrangement]
 
 // 获取学生基本信息
 try await app.getStudentBasicInfo() -> Message<StudentBasicInfo>
+
+// 获取可评价课程列表
+try await app.getEvaluatableClasses(term: String) -> [EvaluatableClass]
+try await app.getCurrentEvaluatableClasses() -> [EvaluatableClass]
+
+// 提交教师评价
+try await app.submitTeacherEvaluation(
+    term: String,
+    evaluatableClass: EvaluatableClass,
+    overallScore: Int,
+    scores: [Int],
+    comments: String
+) -> Void
 ```
 
 #### CalendarParser
@@ -264,21 +305,23 @@ public struct StudentBasicInfo {
     // ... 更多字段
 }
 ```
-    let studyType: String         // 修读类型(如"正常修读"、"转专业重学")
-    let campus: String            // 校区
-    let remark: String?           // 备注
-    let week: Int?                // 考试周
-    let startSlot: Int?           // 开始节次
-    let endSlot: Int?             // 结束节次
-    let term: String              // 学期
-    let examDayInfo: String?      // 考试日期信息
-    let isActive: Int             // 是否有效(0或1)
-    let examSeat: String?         // 考试座位号
-    let teacherRoomId: Int        // 教室ID
-    let startTeacherSlot: String? // 监考教师开始节次
-    let endTeacherSlot: String?   // 监考教师结束节次
+
+#### EvaluatableClass - 可评价课程
+```swift
+public struct EvaluatableClass {
+    let classId: String           // 班级号
+    let courseCode: String        // 课程代码
+    let courseName: String        // 课程名称
+    let courseSerial: String      // 课程序列号
+    let categoryCode: String      // 类别代码
+    let teacherCode: String       // 教师代码
+    let teacherName: String       // 教师名称
+    let evaluationStatus: String? // 评价状态
+    let evaluationId: Int         // 评价ID
+    let teacherId: String         // 教师ID
 }
 ```
+
 
 ## 错误处理
 

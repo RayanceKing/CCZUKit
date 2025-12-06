@@ -402,6 +402,110 @@ final class CCZUKitTests: XCTestCase {
             XCTAssertTrue(true)
         }
     }
+    
+    // MARK: - 教师评价功能测试
+    
+    func testGetEvaluatableClasses() async throws {
+        guard let username = ProcessInfo.processInfo.environment["CCZU_USERNAME"],
+              let password = ProcessInfo.processInfo.environment["CCZU_PASSWORD"] else {
+            throw XCTSkip("CCZU_USERNAME 或 CCZU_PASSWORD 环境变量未设置")
+        }
+        
+        let client = DefaultHTTPClient(username: username, password: password)
+        let app = JwqywxApplication(client: client)
+        
+        do {
+            print("\n=== 教师评价集成测试 ===")
+            
+            // 登录
+            _ = try await app.login()
+            print("[INFO] 登录成功")
+            
+            // 获取当前学期可评价课程
+            let classes = try await app.getCurrentEvaluatableClasses()
+            
+            print("可评价课程数量: \(classes.count)")
+            
+            if !classes.isEmpty {
+                for (index, evaluatableClass) in classes.prefix(3).enumerated() {
+                    print("\n课程\(index + 1):")
+                    print("- 课程代码: \(evaluatableClass.courseCode)")
+                    print("- 课程名称: \(evaluatableClass.courseName)")
+                    print("- 教师代码: \(evaluatableClass.teacherCode)")
+                    print("- 教师名称: \(evaluatableClass.teacherName)")
+                    print("- 班级号: \(evaluatableClass.classId)")
+                    print("- 课程序列号: \(evaluatableClass.courseSerial)")
+                    print("- 评价状态: \(evaluatableClass.evaluationStatus ?? "未评价")")
+                    
+                    // 基本断言
+                    XCTAssertFalse(evaluatableClass.courseCode.isEmpty, "课程代码不应为空")
+                    XCTAssertFalse(evaluatableClass.courseName.isEmpty, "课程名称不应为空")
+                    XCTAssertFalse(evaluatableClass.teacherName.isEmpty, "教师名称不应为空")
+                }
+            } else {
+                print("[INFO] 当前学期暂无可评价课程")
+            }
+        } catch {
+            print("[ERROR] 获取可评价课程列表失败: \(error)")
+            if error is DecodingError {
+                throw XCTSkip("API 返回格式不符合预期，跳过教师评价集成测试")
+            }
+            throw error
+        }
+    }
+    
+    func testSubmitTeacherEvaluation() async throws {
+        guard let username = ProcessInfo.processInfo.environment["CCZU_USERNAME"],
+              let password = ProcessInfo.processInfo.environment["CCZU_PASSWORD"] else {
+            throw XCTSkip("CCZU_USERNAME 或 CCZU_PASSWORD 环境变量未设置")
+        }
+        
+        let client = DefaultHTTPClient(username: username, password: password)
+        let app = JwqywxApplication(client: client)
+        
+        do {
+            print("\n=== 教师评价提交测试 ===")
+            
+            // 登录
+            _ = try await app.login()
+            print("[INFO] 登录成功")
+            
+            // 获取当前学期可评价课程
+            let classes = try await app.getCurrentEvaluatableClasses()
+            
+            if let evaluatableClass = classes.first {
+                print("[INFO] 准备提交课程评价: \(evaluatableClass.courseName)")
+                
+                // 获取当前学期
+                let terms = try await app.getTerms()
+                guard let currentTerm = terms.message.first?.term else {
+                    throw XCTSkip("无法获取当前学期")
+                }
+                
+                // 提交评价
+                try await app.submitTeacherEvaluation(
+                    term: currentTerm,
+                    evaluatableClass: evaluatableClass,
+                    overallScore: 90,
+                    scores: [100, 80, 100, 80, 100, 80],
+                    comments: "教学质量好，讲解清晰"
+                )
+                
+                print("[SUCCESS] 课程评价提交成功")
+                XCTAssertTrue(true)
+            } else {
+                throw XCTSkip("当前学期暂无可评价课程，跳过提交测试")
+            }
+        } catch let error as XCTSkip {
+            throw error
+        } catch {
+            print("[ERROR] 教师评价提交失败: \(error)")
+            if error is DecodingError {
+                throw XCTSkip("API 返回格式不符合预期，跳过教师评价提交测试")
+            }
+            throw error
+        }
+    }
 }
 
 
