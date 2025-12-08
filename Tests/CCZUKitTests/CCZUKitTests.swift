@@ -70,6 +70,66 @@ final class CCZUKitTests: XCTestCase {
         }
     }
     
+    func testCalendarParserWithMultipleWeekRanges() {
+        // 测试多段周次格式：2-8,11-14
+        let matrix: [[RawCourse]] = [
+            [RawCourse(course: "无机与分析化学(上) W2305  2-8,11-14,/ ", teacher: "顾晟燊(主),")]
+        ]
+        
+        let parsed = CalendarParser.parseWeekMatrix(matrix)
+        XCTAssertEqual(parsed.count, 1)
+        
+        if let course = parsed.first {
+            XCTAssertEqual(course.name, "无机与分析化学(上)")
+            XCTAssertEqual(course.teacher, "顾晟燊(主)")
+            XCTAssertEqual(course.location, "W2305")
+            // 应该包含 2,3,4,5,6,7,8,11,12,13,14 共11周
+            XCTAssertEqual(course.weeks.count, 11)
+            XCTAssertEqual(course.weeks, [2,3,4,5,6,7,8,11,12,13,14])
+        }
+    }
+    
+    func testCalendarParserWithOddEvenWeeks() {
+        // 测试单双周格式
+        let matrix: [[RawCourse]] = [
+            [RawCourse(course: "创新创业理论与实践(1) W1106 单 7-8,11-14,/ ", teacher: "宋艳(主),")]
+        ]
+        
+        let parsed = CalendarParser.parseWeekMatrix(matrix)
+        XCTAssertEqual(parsed.count, 1)
+        
+        if let course = parsed.first {
+            XCTAssertEqual(course.name, "创新创业理论与实践(1)")
+            XCTAssertEqual(course.teacher, "宋艳(主)")
+            XCTAssertEqual(course.location, "W1106")
+            // 单周的7-8,11-14: 应该是 7,11,13
+            XCTAssertEqual(course.weeks, [7,11,13])
+        }
+    }
+    
+    func testCalendarParserWithMultipleCourses() {
+        // 测试同一时间段多个课程（不同周次）
+        let matrix: [[RawCourse]] = [
+            [RawCourse(course: "无机与分析化学(上) W2305  2-8,11-14,/生涯教育与就业指导（一） W10阶  15-18,/ ", teacher: "顾晟燊(主),/程晓军(主),何超,")]
+        ]
+        
+        let parsed = CalendarParser.parseWeekMatrix(matrix)
+        XCTAssertEqual(parsed.count, 2)
+        
+        // 第一门课
+        let course1 = parsed[0]
+        XCTAssertEqual(course1.name, "无机与分析化学(上)")
+        XCTAssertEqual(course1.teacher, "顾晟燊(主)")
+        XCTAssertEqual(course1.location, "W2305")
+        XCTAssertEqual(course1.weeks, [2,3,4,5,6,7,8,11,12,13,14])
+        
+        // 第二门课
+        let course2 = parsed[1]
+        XCTAssertEqual(course2.name, "生涯教育与就业指导（一）")
+        XCTAssertEqual(course2.location, "W10阶")
+        XCTAssertEqual(course2.weeks, [15,16,17,18])
+    }
+    
     // MARK: - 错误处理测试
     
     func testCCZUError() {
