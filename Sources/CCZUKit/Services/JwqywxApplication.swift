@@ -337,7 +337,7 @@ public final class JwqywxApplication: @unchecked Sendable {
         
         let payload: [String: String] = [
             "aid": area.aid,
-            "account": client.account.username,
+            "account": "1",
             "area": areaJson
         ]
         
@@ -376,7 +376,7 @@ public final class JwqywxApplication: @unchecked Sendable {
         
         let payload: [String: String] = [
             "aid": area.aid,
-            "account": client.account.username,
+            "account": "1",
             "area": areaJson,
             "building": buildingJson,
             "floor": floorJson,
