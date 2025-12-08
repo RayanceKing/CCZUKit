@@ -122,4 +122,9 @@ extension HTTPClient {
         
         return try await post(url: url, headers: allHeaders, body: formData)
     }
+    
+    /// POST Form请求（formData 别名）
+    public func postForm(url: URL, headers: [String: String]? = nil, formData: [String: String]) async throws -> (Data, HTTPURLResponse) {
+        return try await postForm(url: url, headers: headers, form: formData)
+    }
 }

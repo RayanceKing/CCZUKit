@@ -232,7 +232,67 @@ func exampleWithErrorHandling() async {
     }
 }
 
+// 电费查询示例
+@available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
+func exampleQueryElectricity() async throws {
+    // 1. 创建客户端和应用
+    let client = DefaultHTTPClient(username: "你的学号", password: "你的密码")
+    let app = JwqywxApplication(client: client)
+    
+    print("=== 电费查询示例 ===")
+    
+    // 2. 获取校区列表
+    print("\n获取校区列表...")
+    let areas = try await app.getElectricityAreas()
+    print("可用校区:")
+    for (index, area) in areas.enumerated() {
+        print("\(index + 1). \(area.areaname)")
+    }
+    
+    // 3. 选择校区（这里选择第一个）
+    let selectedArea = areas[0]
+    print("\n已选择: \(selectedArea.areaname)")
+    
+    // 4. 查询该校区的建筑物列表
+    print("\n查询建筑物列表...")
+    let buildings = try await app.getBuildings(area: selectedArea)
+    print("建筑物列表:")
+    for (index, building) in buildings.prefix(5).enumerated() {
+        print("\(index + 1). \(building.building)")
+    }
+    
+    // 5. 选择建筑物（这里选择第一个）
+    guard let selectedBuilding = buildings.first else {
+        print("未找到建筑物")
+        return
+    }
+    print("\n已选择: \(selectedBuilding.building)")
+    
+    // 6. 查询电费信息（需要房间ID）
+    // 房间ID通常由学校宿管系统提供
+    print("\n查询电费信息...")
+    let roomId = "房间ID" // 替换为实际房间ID
+    
+    do {
+        let electricity = try await app.queryElectricity(
+            area: selectedArea,
+            building: selectedBuilding,
+            roomId: roomId
+        )
+        
+        if electricity.errcode == 0 {
+            print("电费查询成功:")
+            print("  响应: \(electricity.errmsg)")
+        } else {
+            print("查询失败: \(electricity.errmsg)")
+        }
+    } catch {
+        print("查询电费出错: \(error)")
+    }
+}
+
 // 使用示例
 // Task {
 //     try await exampleUsage()
 // }
+

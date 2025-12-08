@@ -185,6 +185,39 @@ if let currentTerm = terms.message.first?.term,
 }
 ```
 
+### 查询电费
+
+```swift
+// 1. 获取校区列表
+let areas = try await app.getElectricityAreas()
+print("可用校区:")
+for area in areas {
+    print("- \(area.areaname)")
+}
+
+// 2. 选择校区并查询建筑物
+let selectedArea = areas[0]
+let buildings = try await app.getBuildings(area: selectedArea)
+print("建筑物列表:")
+for building in buildings.prefix(10) {
+    print("- \(building.building)")
+}
+
+// 3. 查询指定房间的电费信息
+let roomId = "你的房间ID"
+let electricity = try await app.queryElectricity(
+    area: selectedArea,
+    building: buildings[0],
+    roomId: roomId
+)
+
+if electricity.errcode == 0 {
+    print("电费查询成功: \(electricity.errmsg)")
+} else {
+    print("查询失败: \(electricity.errmsg)")
+}
+```
+
 ## API 文档
 
 ### 核心类型
@@ -241,6 +274,15 @@ try await app.submitTeacherEvaluation(
     scores: [Int],
     comments: String
 ) -> Void
+
+// 获取校区列表
+try await app.getElectricityAreas() -> [ElectricityArea]
+
+// 获取指定校区的建筑物列表
+try await app.getBuildings(area: ElectricityArea) -> [Building]
+
+// 查询电费信息
+try await app.queryElectricity(area: ElectricityArea, building: Building, roomId: String) -> ElectricityResponse
 ```
 
 #### CalendarParser
