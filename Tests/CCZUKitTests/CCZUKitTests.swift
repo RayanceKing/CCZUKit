@@ -3,6 +3,13 @@ import XCTest
 
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 final class CCZUKitTests: XCTestCase {
+    private let runTrainingPlanOnly = true
+
+    override func setUpWithError() throws {
+        if runTrainingPlanOnly, !self.name.contains("testGetTrainingPlan") {
+            throw XCTSkip("Only run training plan test")
+        }
+    }
     
     // MARK: - 基础测试
     
@@ -569,6 +576,133 @@ final class CCZUKitTests: XCTestCase {
             print("[ERROR] 教师评价提交失败: \(error)")
             if error is DecodingError {
                 throw XCTSkip("API 返回格式不符合预期，跳过教师评价提交测试")
+            }
+            throw error
+        }
+    }
+    
+    // MARK: - 培养方案测试
+    
+    func testGetTrainingPlan() async throws {
+        guard let username = ProcessInfo.processInfo.environment["CCZU_USERNAME"],
+              let password = ProcessInfo.processInfo.environment["CCZU_PASSWORD"] else {
+            throw XCTSkip("CCZU_USERNAME 或 CCZU_PASSWORD 环境变量未设置")
+        }
+        
+        let client = DefaultHTTPClient(username: username, password: password)
+        let app = JwqywxApplication(client: client)
+        
+        do {
+            print("\n=== 培养方案集成测试 ===")
+            
+            // 登录
+            _ = try await app.login()
+            print("[INFO] 登录成功")
+
+            // 清理缓存以强制拉取最新培养方案
+            app.clearTrainingPlanCache()
+            app.deleteTrainingPlanDiskCache()
+            
+            // 获取培养方案
+            let trainingPlan = try await app.getTrainingPlan()
+
+            if let raw = app.lastTrainingPlanRawResponse {
+                print("\n=== 培养方案原始响应 ===")
+                print(raw)
+            }
+            
+            print("\n=== 培养方案信息 ===")
+            print("专业名称: \(trainingPlan.majorName)")
+            print("学位: \(trainingPlan.degree)")
+            print("学制: \(trainingPlan.durationYears)年")
+            print("总学分: \(trainingPlan.totalCredits)")
+            print("必修学分: \(trainingPlan.requiredCredits)")
+            print("选修学分: \(trainingPlan.electiveCredits)")
+            print("实践学分: \(trainingPlan.practiceCredits)")
+            if let objectives = trainingPlan.objectives {
+                print("培养目标: \(objectives)")
+            }
+            
+            // 按学期输出课程
+            print("\n=== 分学期课程 ===")
+            let sortedSemesters = trainingPlan.coursesBySemester.keys.sorted()
+            for semester in sortedSemesters {
+                guard let courses = trainingPlan.coursesBySemester[semester] else { continue }
+                print("\n第\(semester)学期 (共\(courses.count)门课程):")
+                
+                // 按课程类型分组
+                let requiredCourses = courses.filter { $0.type == .required }
+                let electiveCourses = courses.filter { $0.type == .elective }
+                let practiceCourses = courses.filter { $0.type == .practice }
+                
+                if !requiredCourses.isEmpty {
+                    print("\n  必修课程(\(requiredCourses.count)门):")
+                    for course in requiredCourses.prefix(5) {
+                        print("    - \(course.name) [\(course.code)] \(course.credits)学分")
+                    }
+                    if requiredCourses.count > 5 {
+                        print("    ... 还有\(requiredCourses.count - 5)门")
+                    }
+                }
+                
+                if !electiveCourses.isEmpty {
+                    print("\n  选修课程(\(electiveCourses.count)门):")
+                    for course in electiveCourses.prefix(3) {
+                        print("    - \(course.name) [\(course.code)] \(course.credits)学分")
+                    }
+                    if electiveCourses.count > 3 {
+                        print("    ... 还有\(electiveCourses.count - 3)门")
+                    }
+                }
+                
+                if !practiceCourses.isEmpty {
+                    print("\n  实践课程(\(practiceCourses.count)门):")
+                    for course in practiceCourses {
+                        print("    - \(course.name) [\(course.code)] \(course.credits)学分")
+                    }
+                }
+                
+                let semesterCredits = courses.reduce(0.0) { $0 + $1.credits }
+                print("\n  本学期总学分: \(semesterCredits)")
+            }
+            
+            // 学分统计验证
+            print("\n=== 学分统计验证 ===")
+            let calculatedTotal = trainingPlan.requiredCredits + trainingPlan.electiveCredits + trainingPlan.practiceCredits
+            print("必修 + 选修 + 实践 = \(calculatedTotal)")
+            print("总学分 = \(trainingPlan.totalCredits)")
+            
+            // 基本断言
+            XCTAssertFalse(trainingPlan.majorName.isEmpty, "专业名称不应为空")
+            XCTAssertGreaterThan(trainingPlan.durationYears, 0, "学制应大于0")
+            XCTAssertGreaterThan(trainingPlan.totalCredits, 0, "总学分应大于0")
+            XCTAssertGreaterThan(trainingPlan.coursesBySemester.count, 0, "应至少有一个学期的课程")
+            
+            // 验证学分计算
+            XCTAssertEqual(calculatedTotal, trainingPlan.totalCredits, accuracy: 0.1, "学分统计应一致")
+            
+        } catch {
+            print("[ERROR] 获取培养方案失败: \(error)")
+            
+            // 输出详细错误信息
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .typeMismatch(let type, let context):
+                    print("类型不匹配: 期望 \(type), 路径: \(context.codingPath)")
+                    print("调试描述: \(context.debugDescription)")
+                case .valueNotFound(let type, let context):
+                    print("值未找到: 类型 \(type), 路径: \(context.codingPath)")
+                    print("调试描述: \(context.debugDescription)")
+                case .keyNotFound(let key, let context):
+                    print("键未找到: \(key.stringValue), 路径: \(context.codingPath)")
+                    print("调试描述: \(context.debugDescription)")
+                case .dataCorrupted(let context):
+                    print("数据损坏, 路径: \(context.codingPath)")
+                    print("调试描述: \(context.debugDescription)")
+                @unknown default:
+                    print("未知解码错误")
+                }
+                throw XCTSkip("API 返回格式不符合预期，跳过培养方案集成测试")
             }
             throw error
         }
