@@ -7,6 +7,7 @@ public final class JwqywxApplication: @unchecked Sendable {
     private var authorizationId: String?
     private var studentNumber: String?
     private var customHeaders: [String: String]
+    private var trainingPlanCache: TrainingPlan?
     
     public init(client: DefaultHTTPClient) {
         self.client = client
@@ -60,6 +61,11 @@ public final class JwqywxApplication: @unchecked Sendable {
         // 更新headers：后续接口需要Authorization
         customHeaders["Authorization"] = authorizationToken
         
+        // 自动预取培养方案（忽略错误以不影响登录流程）
+        Task { [weak self] in
+            do { _ = try await self?.prefetchTrainingPlan() } catch { }
+        }
+        
         return message
     }
     
@@ -104,6 +110,76 @@ public final class JwqywxApplication: @unchecked Sendable {
         
         let decoder = JSONDecoder()
         return try decoder.decode(Message<Term>.self, from: data)
+    }
+
+    // MARK: - 培养方案
+
+    /// 获取并缓存培养方案（含磁盘缓存）
+    public func getTrainingPlan() async throws -> TrainingPlan {
+        if let cached = trainingPlanCache { return cached }
+        guard let authId = authorizationId else { throw CCZUError.notLoggedIn }
+        guard let stuNum = studentNumber else { throw CCZUError.notLoggedIn }
+
+        // 先尝试读取磁盘缓存
+        if let disk = try? loadTrainingPlanFromDisk(studentNumber: stuNum) {
+            trainingPlanCache = disk
+            return disk
+        }
+
+        // 真实端点
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/cj_xh_jxjh_cj")!
+        let requestData: [String: String] = [
+            "xh": stuNum,
+            "yhid": authId
+        ]
+
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: requestData)
+        let plan = try TrainingPlanParser.parse(from: data)
+        trainingPlanCache = plan
+        try? saveTrainingPlanToDisk(plan, studentNumber: stuNum)
+        return plan
+    }
+
+    /// 预取培养方案（触发网络并落盘）
+    @discardableResult
+    public func prefetchTrainingPlan() async throws -> TrainingPlan {
+        guard let _ = authorizationId, let _ = studentNumber else { throw CCZUError.notLoggedIn }
+        return try await getTrainingPlan()
+    }
+
+    /// 清除培养方案缓存
+    public func clearTrainingPlanCache() {
+        trainingPlanCache = nil
+    }
+
+    // MARK: - 磁盘缓存帮助
+    private func cacheURL(studentNumber: String) throws -> URL {
+        let fm = FileManager.default
+        let dir = try fm.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            .appendingPathComponent("CCZUKit", isDirectory: true)
+        if !fm.fileExists(atPath: dir.path) {
+            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        return dir.appendingPathComponent("training_plan_\(studentNumber).json")
+    }
+
+    private func saveTrainingPlanToDisk(_ plan: TrainingPlan, studentNumber: String) throws {
+        let url = try cacheURL(studentNumber: studentNumber)
+        let data = try JSONEncoder().encode(plan)
+        try data.write(to: url, options: .atomic)
+    }
+
+    private func loadTrainingPlanFromDisk(studentNumber: String) throws -> TrainingPlan? {
+        let url = try cacheURL(studentNumber: studentNumber)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(TrainingPlan.self, from: data)
+    }
+
+    /// 删除磁盘缓存
+    public func deleteTrainingPlanDiskCache() {
+        guard let stuNum = studentNumber, let url = try? cacheURL(studentNumber: stuNum) else { return }
+        try? FileManager.default.removeItem(at: url)
     }
     
     // MARK: - 学生信息
