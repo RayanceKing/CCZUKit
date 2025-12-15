@@ -584,7 +584,7 @@ public struct SelectionBatch: Decodable, Sendable {
 
 /// 选课权限（某批次是否对该年级开放）
 public struct SelectionPermission: Decodable, Sendable {
-    public let isAllowed: Bool            // xk 是否有权选课
+    public let isAllowed: Bool            // xk 是否有权选课（后端返回整数0/1）
     public let term: String               // xkxq 对应学期
     public let remark: String             // bz 备注
     public let selectionMethod: String    // cxbmfs 选课方式
@@ -600,7 +600,9 @@ public struct SelectionPermission: Decodable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        isAllowed = try c.decode(Bool.self, forKey: .isAllowed)
+        // 后端返回整数 0/1，需要先解码为 Int 再转换为 Bool
+        let xkInt = try c.decode(Int.self, forKey: .isAllowed)
+        isAllowed = xkInt != 0
         term = try c.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
         remark = (try c.decodeIfPresent(String.self, forKey: .remark) ?? "").trimmingCharacters(in: .whitespaces)
         selectionMethod = (try c.decodeIfPresent(String.self, forKey: .selectionMethod) ?? "").trimmingCharacters(in: .whitespaces)
