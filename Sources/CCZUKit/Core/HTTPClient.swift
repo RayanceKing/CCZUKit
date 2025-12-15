@@ -89,6 +89,14 @@ public final class DefaultHTTPClient: HTTPClient, @unchecked Sendable {
             task.resume()
         }
     }
+    
+    // 发送 JSON（支持 Any 结构体, 以 JSONSerialization 组装）
+    public func postJSON(url: URL, headers: [String: String] = [:], anyJSON: [String: Any]) async throws -> (Data, HTTPURLResponse) {
+        var headers = headers
+        headers["Content-Type"] = "application/json;charset=utf-8"
+        let body = try JSONSerialization.data(withJSONObject: anyJSON, options: [])
+        return try await post(url: url, headers: headers, body: body)
+    }
 }
 
 extension HTTPClient {

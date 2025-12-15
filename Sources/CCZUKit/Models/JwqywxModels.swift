@@ -421,3 +421,103 @@ public struct ElectricityResponse: Decodable, Sendable {
     }
 }
 
+// MARK: - 选课相关模型
+
+/// 可选/已选课程项（来自 xk_xh_kbk）
+public struct SelectableCourse: Decodable, Sendable {
+    public let term: String            // xq 学期
+    public let classCode: String       // bh 班级号
+    public let className: String       // bj 班级名
+    public let courseCode: String      // kcdm 课程代码
+    public let courseName: String      // kcmc 课程名称
+    public let courseSerial: String    // kch 课程序列号
+    public let categoryCode: String    // lbdh 类别代码
+    public let hours: Int              // xs 学时
+    public let credits: Double         // xf 学分
+    public let examTypeName: String    // ksfs 考试方式(文字)
+    public let capacity: Int           // kkrs 开课人数/容量
+    public let courseAttrCode: String  // kcxbdm 课程属性代码
+    public let teacherCode: String     // jsdm 教师代码
+    public let teacherName: String     // jsmc 教师名称
+    public let isExamType: Int         // ksxzm 考试性质码
+    public let examMode: Int           // ksfsm 考试方式码
+    public let idn: Int                // idn 课程标识
+    public let selectionStatus: String // xkqk 选课情况（"已选"/空）
+    public let selectedId: Int         // xkidn 已选记录ID（未选为0）
+    public let studyType: String       // xklb 修读类别
+
+    enum CodingKeys: String, CodingKey {
+        case term = "xq"
+        case classCode = "bh"
+        case className = "bj"
+        case courseCode = "kcdm"
+        case courseName = "kcmc"
+        case courseSerial = "kch"
+        case categoryCode = "lbdh"
+        case hours = "xs"
+        case credits = "xf"
+        case examTypeName = "ksfs"
+        case capacity = "kkrs"
+        case courseAttrCode = "kcxbdm"
+        case teacherCode = "jsdm"
+        case teacherName = "jsmc"
+        case isExamType = "ksxzm"
+        case examMode = "ksfsm"
+        case idn
+        case selectionStatus = "xkqk"
+        case selectedId = "xkidn"
+        case studyType = "xklb"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        term = try c.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
+        classCode = try c.decode(String.self, forKey: .classCode).trimmingCharacters(in: .whitespaces)
+        className = try c.decode(String.self, forKey: .className).trimmingCharacters(in: .whitespaces)
+        courseCode = try c.decode(String.self, forKey: .courseCode).trimmingCharacters(in: .whitespaces)
+        courseName = try c.decode(String.self, forKey: .courseName).trimmingCharacters(in: .whitespaces)
+        courseSerial = try c.decode(String.self, forKey: .courseSerial).trimmingCharacters(in: .whitespaces)
+        categoryCode = try c.decode(String.self, forKey: .categoryCode).trimmingCharacters(in: .whitespaces)
+        hours = try c.decode(Int.self, forKey: .hours)
+        credits = try c.decode(Double.self, forKey: .credits)
+        examTypeName = try c.decode(String.self, forKey: .examTypeName).trimmingCharacters(in: .whitespaces)
+        capacity = try c.decode(Int.self, forKey: .capacity)
+        courseAttrCode = try c.decode(String.self, forKey: .courseAttrCode).trimmingCharacters(in: .whitespaces)
+        teacherCode = try c.decode(String.self, forKey: .teacherCode).trimmingCharacters(in: .whitespaces)
+        teacherName = try c.decode(String.self, forKey: .teacherName).trimmingCharacters(in: .whitespaces)
+        isExamType = try c.decode(Int.self, forKey: .isExamType)
+        examMode = try c.decode(Int.self, forKey: .examMode)
+        idn = try c.decode(Int.self, forKey: .idn)
+        selectionStatus = (try c.decodeIfPresent(String.self, forKey: .selectionStatus) ?? "").trimmingCharacters(in: .whitespaces)
+        selectedId = try c.decode(Int.self, forKey: .selectedId)
+        studyType = try c.decode(String.self, forKey: .studyType).trimmingCharacters(in: .whitespaces)
+    }
+}
+
+/// 简单响应（message 可能是 Int 或 String）
+public struct SimpleJWResponse: Decodable, Sendable {
+    public let status: Int
+    public let token: String?
+    public let messageInt: Int?
+    public let messageString: String?
+
+    enum CodingKeys: String, CodingKey { case status, token, message }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        status = try c.decode(Int.self, forKey: .status)
+        token = try c.decodeIfPresent(String.self, forKey: .token)
+        // message 可能为数字或字符串
+        if let intVal = try? c.decode(Int.self, forKey: .message) {
+            messageInt = intVal
+            messageString = nil
+        } else if let strVal = try? c.decode(String.self, forKey: .message) {
+            messageInt = nil
+            messageString = strVal
+        } else {
+            messageInt = nil
+            messageString = nil
+        }
+    }
+}
+

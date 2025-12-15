@@ -218,6 +218,37 @@ if electricity.errcode == 0 {
 }
 ```
 
+### 选课（含批量分片与重试）
+
+```swift
+// 登录
+let client = DefaultHTTPClient(username: "你的学号", password: "你的密码")
+let app = JwqywxApplication(client: client)
+_ = try await app.login()
+
+// 获取当前学期可选课程（自动根据本人班级）
+let all = try await app.getCurrentSelectableCourses()
+
+// 仅选未选课程：SDK 已自动过滤 xkqk != "" 的已选条目
+// 可按条件筛选想选的课程，例如按 idn 选择
+let idnsToSelect = [477469, 482112]
+let info = try await app.getStudentBasicInfo()
+let classCode = try info.message.first.map { $0.classCode } ?? ""
+
+// 按 idn 批量选课（SDK 自动按每 5 门分片，多分片顺序提交，每片失败重试一次）
+try await app.selectCoursesByIdn(term: "25-26-2", classCode: classCode, idns: idnsToSelect)
+
+// 批量退课（传 xkidn 列表；后台要求最后一个逗号由 SDK 自动处理）
+let dropMessage = try await app.dropCourses(selectedIds: [10658541, 10658543])
+print(dropMessage) // 例如："19 门课程退选成功！"
+```
+
+要点：
+- 批量选课受限于后端每次最多 5 门，SDK 自动分片顺序提交。
+- 每个分片若失败，会自动重试一次；两次失败后抛错，错误消息包含后端返回的 message。
+- SDK 会自动过滤已选（`xkqk` 非空）的课程，不会重复提交。
+- 需要登录以携带 `Authorization` 与 `yhid`。
+
 ## API 文档
 
 ### 核心类型

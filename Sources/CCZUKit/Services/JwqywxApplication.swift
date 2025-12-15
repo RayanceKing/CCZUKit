@@ -525,6 +525,153 @@ public final class JwqywxApplication: @unchecked Sendable {
         let decoder = JSONDecoder()
         return try decoder.decode(ElectricityResponse.self, from: data)
     }
+
+    // MARK: - 选课
+
+    /// 查询选课状态/课程列表（xk_xh_kbk）
+    public func getSelectableCourses(term: String, classCode: String) async throws -> [SelectableCourse] {
+        guard let authId = authorizationId, let stuNum = studentNumber else { throw CCZUError.notLoggedIn }
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/xk_xh_kbk")!
+        let body: [String: String] = [
+            "xq": term,
+            "bh": classCode,
+            "xh": stuNum,
+            "yhid": authId
+        ]
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: body)
+        let decoder = JSONDecoder()
+        let msg = try decoder.decode(Message<SelectableCourse>.self, from: data)
+        return msg.message
+    }
+
+    /// 查询当前学期、本人班级的可选课程
+    public func getCurrentSelectableCourses() async throws -> [SelectableCourse] {
+        let terms = try await getTerms()
+        guard let currentTerm = terms.message.first?.term else { throw CCZUError.missingData("No term found") }
+        let info = try await getStudentBasicInfo()
+        guard let basic = info.message.first else { throw CCZUError.missingData("No basic info") }
+        return try await getSelectableCourses(term: currentTerm, classCode: basic.classCode)
+    }
+
+    /// 选课（xk_insert_xfz），最多5门一组，自动分片
+    /// - Parameters:
+    ///   - term: 学期，如 "25-26-2"
+    ///   - items: 待选课程（来自 getSelectableCourses）
+    /// - Throws: 抛出首个失败错误
+    public func selectCourses(term: String, items: [SelectableCourse]) async throws {
+        guard let authId = authorizationId, let stuNum = studentNumber else { throw CCZUError.notLoggedIn }
+
+        // 获取姓名用于 xm 字段
+        let basic = try await getStudentBasicInfo()
+        let name = basic.message.first?.name ?? ""
+
+        // 过滤：仅对未选(xkqk为空)的课程进行提交
+        let pending = items.filter { $0.selectionStatus.isEmpty }
+
+        // 按5个分片
+        let chunks: [[SelectableCourse]] = stride(from: 0, to: pending.count, by: 5).map {
+            Array(pending[$0..<min($0+5, pending.count)])
+        }
+
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/xk_insert_xfz")!
+        let decoder = JSONDecoder()
+
+        for chunk in chunks where !chunk.isEmpty {
+            // postdata 需要与抓包一致的字段集合
+            let postdata: [[String: Any]] = chunk.map { c in
+                [
+                    "xq": term,
+                    "bh": c.classCode,
+                    "bj": c.className,
+                    "kcdm": c.courseCode,
+                    "kcmc": c.courseName,
+                    "kch": c.courseSerial,
+                    "lbdh": c.categoryCode,
+                    "xs": c.hours,
+                    "xf": c.credits,
+                    "ksfs": c.examTypeName,
+                    "kkrs": c.capacity,
+                    "kcxbdm": c.courseAttrCode,
+                    "jsdm": c.teacherCode,
+                    "jsmc": c.teacherName,
+                    "ksxzm": c.isExamType,
+                    "ksfsm": c.examMode,
+                    "idn": c.idn,
+                    "xkqk": c.selectionStatus,
+                    "xkidn": c.selectedId,
+                    "xklb": c.studyType
+                ]
+            }
+
+            // 构造 JSON 体
+            let payload: [String: Any] = [
+                "xq": term,
+                "xh": stuNum,
+                "xm": name,
+                "postdata": postdata,
+                "yhid": authId
+            ]
+
+            // 通过 JSONSerialization 发送（保持与 postJSON 一致的 headers），失败重试一次
+            var lastError: Error?
+            var success = false
+            for _ in 0..<2 { // 最多2次（含首次）
+                do {
+                    let (data, response) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: payload)
+                    guard response.statusCode == 200 else {
+                        throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
+                    }
+                    let res = try decoder.decode(SimpleJWResponse.self, from: data)
+                    if res.status == 0 {
+                        success = true
+                        break
+                    } else {
+                        throw CCZUError.unknown("选课失败: status=\(res.status), message=\(res.messageString ?? String(res.messageInt ?? -1))")
+                    }
+                } catch {
+                    lastError = error
+                    // 继续下一次尝试
+                }
+            }
+            if !success {
+                throw lastError ?? CCZUError.unknown("选课失败且重试后仍未成功")
+            }
+        }
+    }
+
+    /// 根据 idn 列表选课（自动查询并匹配条目）
+    public func selectCoursesByIdn(term: String, classCode: String, idns: [Int]) async throws {
+        let all = try await getSelectableCourses(term: term, classCode: classCode)
+        let map = Dictionary(uniqueKeysWithValues: all.map { ($0.idn, $0) })
+        let items = idns.compactMap { map[$0] }
+        guard !items.isEmpty else { return }
+        try await selectCourses(term: term, items: items)
+    }
+
+    /// 批量退课（xk_delete_xfzxkmd）
+    /// - Parameter selectedIds: xkidn 列表（已选课程记录ID）
+    public func dropCourses(selectedIds: [Int]) async throws -> String {
+        guard let authId = authorizationId else { throw CCZUError.notLoggedIn }
+        guard !selectedIds.isEmpty else { return "" }
+
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/xk_delete_xfzxkmd")!
+        // 按抓包格式，结尾带逗号
+        let idnlist = selectedIds.map(String.init).joined(separator: ",") + ","
+        let body: [String: String] = [
+            "idnlist": idnlist,
+            "yhid": authId
+        ]
+        let (data, response) = try await client.postJSON(url: url, headers: customHeaders, json: body)
+        guard response.statusCode == 200 else {
+            throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
+        }
+        let decoder = JSONDecoder()
+        let res = try decoder.decode(SimpleJWResponse.self, from: data)
+        if res.status != 0 {
+            throw CCZUError.unknown("退课失败: status=\(res.status), message=\(res.messageString ?? String(res.messageInt ?? -1))")
+        }
+        return res.messageString ?? ""
+    }
 }
 
 // MARK: - 课表行数据
