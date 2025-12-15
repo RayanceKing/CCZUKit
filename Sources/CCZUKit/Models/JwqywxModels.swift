@@ -536,6 +536,24 @@ public struct SelectionBatch: Decodable, Sendable {
     public let endDate: String            // enddate ISO 时间
     public let isSelectable: Bool         // xk 是否可选
 
+    /// 是否在开放时间段内
+    public var isOpen: Bool {
+        let now = Date()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let begin = formatter.date(from: beginDate),
+           let end = formatter.date(from: endDate) {
+            return now >= begin && now <= end
+        }
+        return false
+    }
+    
+    /// 是否允许选课（等同于 isSelectable）
+    public var isAllowed: Bool {
+        return isSelectable
+    }
+
     enum CodingKeys: String, CodingKey {
         case code = "dm"
         case name = "mc"

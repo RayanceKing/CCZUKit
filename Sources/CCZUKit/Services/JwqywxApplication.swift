@@ -463,13 +463,14 @@ public final class JwqywxApplication: @unchecked Sendable {
     public func getBuildings(area: ElectricityArea) async throws -> [Building] {
         let url = URL(string: "http://wxxy.cczu.edu.cn/wechat/callinterface/queryElecBuilding.html")!
         
-        let areaDict: [String: String] = ["area": area.area, "areaname": area.areaname]
-        let areaJson = try String(data: JSONEncoder().encode(areaDict), encoding: .utf8) ?? ""
+        let areaJSON = """
+        {"areaname":"\(area.areaname)","area":"\(area.area)"}
+        """
         
         let payload: [String: String] = [
-            "aid": area.aid,
             "account": "1",
-            "area": areaJson
+            "area": areaJSON,
+            "aid": area.aid
         ]
         
         var headers = customHeaders
@@ -481,9 +482,21 @@ public final class JwqywxApplication: @unchecked Sendable {
             throw CCZUError.networkError(NSError(domain: "HTTP", code: response.statusCode))
         }
         
-        let decoder = JSONDecoder()
-        let json = try decoder.decode([String: [Building]].self, from: data)
-        return json["buildingtab"] ?? []
+        // 使用 JSONSerialization 手动解析，因为后端返回的 JSON 格式可能不标准
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let buildingArray = json["buildingtab"] as? [[String: Any]] else {
+            return []
+        }
+        
+        let buildings = buildingArray.compactMap { buildingDict -> Building? in
+            guard let building = buildingDict["building"] as? String,
+                  let buildingid = buildingDict["buildingid"] as? String else {
+                return nil
+            }
+            return Building(building: building, buildingid: buildingid)
+        }
+        
+        return buildings
     }
     
     /// 查询电费信息
@@ -603,7 +616,7 @@ public final class JwqywxApplication: @unchecked Sendable {
         // 2) 获取批次并选择处于开放状态的批次
         let batches = try await getSelectionBatches(grade: grade)
         // 简化策略：优先选择 isOpen=true 且 xk=true 的批次；否则取最新 endDate 未过期的批次
-        let candidate = batches.first { $0.isOpen && $0.isAllowed } ?? batches.sorted { ($0.endDate ?? "") > ($1.endDate ?? "") }.first
+        let candidate = batches.first { $0.isOpen && $0.isAllowed } ?? batches.sorted { ($0.endDate) > ($1.endDate) }.first
         guard let batch = candidate else { throw CCZUError.missingData("当前年级没有开放的选课批次") }
         // 3) 批次权限校验以获得正确学期
         let perm = try await checkBatchPermission(batchCode: batch.code, grade: grade)
