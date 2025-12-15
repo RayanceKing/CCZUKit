@@ -521,3 +521,72 @@ public struct SimpleJWResponse: Decodable, Sendable {
     }
 }
 
+// MARK: - 选课批次与权限
+
+/// 选课批次信息（学期对应的选课时间窗）
+public struct SelectionBatch: Decodable, Sendable {
+    public let code: String               // dm 批次代码如 "0003-004"
+    public let name: String               // mc 批次名称如"学分制选课"
+    public let grade: Int                 // nj 年级
+    public let term: String               // xkxq 对应学期如 "25-26-2"
+    public let remark: String             // bz 备注
+    public let selectionMethod: String    // cxbmfs 选课方式
+    public let maxCourses: Int            // xkmc 最多选课数
+    public let beginDate: String          // begindate ISO 时间
+    public let endDate: String            // enddate ISO 时间
+    public let isSelectable: Bool         // xk 是否可选
+
+    enum CodingKeys: String, CodingKey {
+        case code = "dm"
+        case name = "mc"
+        case grade = "nj"
+        case term = "xkxq"
+        case remark = "bz"
+        case selectionMethod = "cxbmfs"
+        case maxCourses = "xkmc"
+        case beginDate = "begindate"
+        case endDate = "enddate"
+        case isSelectable = "xk"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        code = try c.decode(String.self, forKey: .code).trimmingCharacters(in: .whitespaces)
+        name = try c.decode(String.self, forKey: .name).trimmingCharacters(in: .whitespaces)
+        grade = try c.decode(Int.self, forKey: .grade)
+        term = try c.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
+        remark = (try c.decodeIfPresent(String.self, forKey: .remark) ?? "").trimmingCharacters(in: .whitespaces)
+        selectionMethod = (try c.decodeIfPresent(String.self, forKey: .selectionMethod) ?? "").trimmingCharacters(in: .whitespaces)
+        maxCourses = try c.decode(Int.self, forKey: .maxCourses)
+        beginDate = try c.decode(String.self, forKey: .beginDate)
+        endDate = try c.decode(String.self, forKey: .endDate)
+        isSelectable = try c.decode(Bool.self, forKey: .isSelectable)
+    }
+}
+
+/// 选课权限（某批次是否对该年级开放）
+public struct SelectionPermission: Decodable, Sendable {
+    public let isAllowed: Bool            // xk 是否有权选课
+    public let term: String               // xkxq 对应学期
+    public let remark: String             // bz 备注
+    public let selectionMethod: String    // cxbmfs 选课方式
+    public let maxCourses: Int            // xkmc 最多选课数
+
+    enum CodingKeys: String, CodingKey {
+        case isAllowed = "xk"
+        case term = "xkxq"
+        case remark = "bz"
+        case selectionMethod = "cxbmfs"
+        case maxCourses = "xkmc"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        isAllowed = try c.decode(Bool.self, forKey: .isAllowed)
+        term = try c.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
+        remark = (try c.decodeIfPresent(String.self, forKey: .remark) ?? "").trimmingCharacters(in: .whitespaces)
+        selectionMethod = (try c.decodeIfPresent(String.self, forKey: .selectionMethod) ?? "").trimmingCharacters(in: .whitespaces)
+        maxCourses = try c.decode(Int.self, forKey: .maxCourses)
+    }
+}
+

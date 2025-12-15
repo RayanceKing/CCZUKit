@@ -249,6 +249,42 @@ print(dropMessage) // 例如："19 门课程退选成功！"
 - SDK 会自动过滤已选（`xkqk` 非空）的课程，不会重复提交。
 - 需要登录以携带 `Authorization` 与 `yhid`。
 
+### 选课前置流程（必读）
+
+为保证拉取到“真正可选”的课程列表，需要按小程序实际流程进行前置校验：
+
+- 功能权限：`/api/qx_yhdm_gnmk_syqx`（检查是否具备选课功能权限）
+- 批次列表：`/api/xk_xkxm_nj`（获取该年级开放的选课批次）
+- 批次权限：`/api/xkqx_dm_nj`（校验所选批次是否对该年级开放，并获得正确学期 `xkxq`）
+- 课程列表：`/api/xk_xh_kbk`（在正确学期与班级下获取可选课程）
+
+CCZUKit 已封装上述流程，推荐直接调用 `getCurrentSelectableCoursesWithPreflight(classCode:grade:)`：
+
+```swift
+// 假设已完成登录并持有 app 实例
+app.enableDebugLogging = true // 可选：输出调试信息
+
+let classCode = "软件工程2201" // 班级代码
+let grade = 2022               // 年级
+
+let courses = try await app.getCurrentSelectableCoursesWithPreflight(classCode: classCode, grade: grade)
+print("可选课程数: \(courses.count)")
+```
+
+内部策略：优先选择“开放且允许选课”的批次；若没有则选择“结束时间最近”的批次，再通过批次权限接口获取正确学期后拉取课程。
+
+如需单独调用各步骤，也可使用：
+
+- `checkSelectionPermission(userId:functionCode:)`
+- `getSelectionBatches(grade:)`
+- `checkBatchPermission(batchCode:grade:)`
+- `getSelectableCourses(term:classCode:)`
+
+故障排查建议：
+
+- 返回为空：确认当前年级是否存在“开放”的批次，或检查是否具备功能权限
+- 学期不一致：请确保通过 `checkBatchPermission` 获取到的 `term` 传入 `getSelectableCourses`
+
 ## API 文档
 
 ### 核心类型

@@ -9,6 +9,7 @@ public final class JwqywxApplication: @unchecked Sendable {
     private var customHeaders: [String: String]
     private var trainingPlanCache: TrainingPlan?
     public private(set) var lastTrainingPlanRawResponse: String?
+    public var enableDebugLogging: Bool = false
     
     public init(client: DefaultHTTPClient) {
         self.client = client
@@ -528,6 +529,90 @@ public final class JwqywxApplication: @unchecked Sendable {
 
     // MARK: - 选课
 
+    /// 检查功能权限（前置检查）
+    /// - Parameters:
+    ///   - userId: 用户代码（通常为学号）
+    ///   - functionCode: 功能代码（如"xkbm_fsxz" 为分层选择）
+    /// - Throws: 无权限时抛错
+    public func checkSelectionPermission(userId: String, functionCode: String = "xkbm_fsxz") async throws {
+        guard let authId = authorizationId else { throw CCZUError.notLoggedIn }
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/qx_yhdm_gnmk_syqx")!
+        let body: [String: String] = [
+            "yhdm": userId,
+            "gnmk": functionCode,
+            "yhid": authId
+        ]
+        if enableDebugLogging { print("[DEBUG] checkSelectionPermission body=\(body)") }
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: body)
+        let decoder = JSONDecoder()
+        let msg = try decoder.decode(Message<[String: String]>.self, from: data)
+        if msg.status != 0 { throw CCZUError.unknown("选课权限检查失败") }
+        if enableDebugLogging { print("[DEBUG] checkSelectionPermission OK") }
+    }
+
+    /// 获取该年级的选课批次列表（需要先确认用户身份）
+    /// - Parameter grade: 年级（如 2025）
+    /// - Returns: 选课批次列表
+    public func getSelectionBatches(grade: Int) async throws -> [SelectionBatch] {
+        guard let userId = studentNumber else { throw CCZUError.notLoggedIn }
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/xk_xkxm_nj")!
+        let body: [String: Any] = [
+            "yhdm": userId,
+            "nj": grade
+        ]
+        if enableDebugLogging { print("[DEBUG] getSelectionBatches body=\(body)") }
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: body)
+        let decoder = JSONDecoder()
+        let msg = try decoder.decode(Message<SelectionBatch>.self, from: data)
+        if enableDebugLogging { print("[DEBUG] getSelectionBatches batches=\(msg.message.count)") }
+        return msg.message
+    }
+
+    /// 检查某批次的选课权限
+    /// - Parameters:
+    ///   - batchCode: 批次代码（如"0003-004"）
+    ///   - grade: 年级
+    /// - Returns: 选课权限信息
+    public func checkBatchPermission(batchCode: String, grade: Int) async throws -> SelectionPermission {
+        guard let authId = authorizationId else { throw CCZUError.notLoggedIn }
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/xkqx_dm_nj")!
+        let body: [String: Any] = [
+            "dm": batchCode,
+            "nj": grade,
+            "yhid": authId
+        ]
+        if enableDebugLogging { print("[DEBUG] checkBatchPermission body=\(body)") }
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: body)
+        let decoder = JSONDecoder()
+        let msg = try decoder.decode(Message<SelectionPermission>.self, from: data)
+        guard let perm = msg.message.first else { throw CCZUError.missingData("未获得选课权限") }
+        if !perm.isAllowed { throw CCZUError.unknown("该批次对你的年级未开放选课权限") }
+        if enableDebugLogging { print("[DEBUG] checkBatchPermission OK, term=\(perm.term)") }
+        return perm
+    }
+
+    /// 综合前置检查后，获取当前允许批次的可选课程
+    /// - Parameters:
+    ///   - classCode: 班级代码
+    ///   - grade: 年级（如 2025）
+    /// - Returns: 可选课程列表
+    public func getCurrentSelectableCoursesWithPreflight(classCode: String, grade: Int) async throws -> [SelectableCourse] {
+        guard let userId = studentNumber else { throw CCZUError.notLoggedIn }
+        // 1) 功能权限
+        try await checkSelectionPermission(userId: userId)
+        // 2) 获取批次并选择处于开放状态的批次
+        let batches = try await getSelectionBatches(grade: grade)
+        // 简化策略：优先选择 isOpen=true 且 xk=true 的批次；否则取最新 endDate 未过期的批次
+        let candidate = batches.first { $0.isOpen && $0.isAllowed } ?? batches.sorted { ($0.endDate ?? "") > ($1.endDate ?? "") }.first
+        guard let batch = candidate else { throw CCZUError.missingData("当前年级没有开放的选课批次") }
+        // 3) 批次权限校验以获得正确学期
+        let perm = try await checkBatchPermission(batchCode: batch.code, grade: grade)
+        let term = perm.term
+        // 4) 按正确学期拉取可选课程
+        let courses = try await getSelectableCourses(term: term, classCode: classCode)
+        if enableDebugLogging { print("[DEBUG] getCurrentSelectableCoursesWithPreflight term=\(term), courses=\(courses.count)") }
+        return courses
+    }
     /// 查询选课状态/课程列表（xk_xh_kbk）
     public func getSelectableCourses(term: String, classCode: String) async throws -> [SelectableCourse] {
         guard let authId = authorizationId, let stuNum = studentNumber else { throw CCZUError.notLoggedIn }
@@ -538,9 +623,11 @@ public final class JwqywxApplication: @unchecked Sendable {
             "xh": stuNum,
             "yhid": authId
         ]
+        if enableDebugLogging { print("[DEBUG] xk_xh_kbk body=\(body)") }
         let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: body)
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<SelectableCourse>.self, from: data)
+        if enableDebugLogging { print("[DEBUG] xk_xh_kbk items=\(msg.message.count)") }
         return msg.message
     }
 
@@ -567,6 +654,7 @@ public final class JwqywxApplication: @unchecked Sendable {
 
         // 过滤：仅对未选(xkqk为空)的课程进行提交
         let pending = items.filter { $0.selectionStatus.isEmpty }
+        if enableDebugLogging { print("[DEBUG] select pending count=\(pending.count) total=\(items.count)") }
 
         // 按5个分片
         let chunks: [[SelectableCourse]] = stride(from: 0, to: pending.count, by: 5).map {
@@ -611,6 +699,7 @@ public final class JwqywxApplication: @unchecked Sendable {
                 "postdata": postdata,
                 "yhid": authId
             ]
+            if enableDebugLogging { print("[DEBUG] xk_insert_xfz chunk size=\(chunk.count)") }
 
             // 通过 JSONSerialization 发送（保持与 postJSON 一致的 headers），失败重试一次
             var lastError: Error?
@@ -622,6 +711,7 @@ public final class JwqywxApplication: @unchecked Sendable {
                         throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
                     }
                     let res = try decoder.decode(SimpleJWResponse.self, from: data)
+                    if enableDebugLogging { print("[DEBUG] xk_insert_xfz status=\(res.status) messageInt=\(String(describing: res.messageInt)) messageString=\(String(describing: res.messageString))") }
                     if res.status == 0 {
                         success = true
                         break
