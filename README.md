@@ -285,6 +285,71 @@ print("可选课程数: \(courses.count)")
 - 返回为空：确认当前年级是否存在“开放”的批次，或检查是否具备功能权限
 - 学期不一致：请确保通过 `checkBatchPermission` 获取到的 `term` 传入 `getSelectableCourses`
 
+### 通识类选修课程选课（抢课模式）
+
+通识类选修课程（通识选课）与普通选课不同，属于抢课模式，每次最多选2门课程。SDK 已封装完整流程：
+
+```swift
+// 登录
+let client = DefaultHTTPClient(username: "你的学号", password: "你的密码")
+let app = JwqywxApplication(client: client)
+_ = try await app.login()
+
+// 获取学生基本信息（用于获取班级代码和年级）
+let info = try await app.getStudentBasicInfo()
+let classCode = info.message.first?.classCode ?? ""
+let grade = info.message.first?.grade ?? 0
+let campus = info.message.first?.campus ?? ""
+
+// 获取通识类选修课程可选列表
+let term = "25-26-2" // 当前学期
+let courses = try await app.getGeneralElectiveCourses(
+    term: term,
+    classCode: classCode,
+    grade: grade,
+    campus: campus
+)
+
+// 筛选想选的课程（例如按课程名称或教师）
+let coursesToSelect = courses.filter { course in
+    course.availableCount > 0 && // 必须有余量
+    course.courseName.contains("大学英语") // 示例筛选条件
+}
+
+// 批量选课（SDK 自动按每 2 门分片，多分片顺序提交，每片失败重试一次）
+try await app.selectGeneralElectiveCourses(term: term, courses: coursesToSelect)
+
+// 查看已选课程
+let selected = try await app.getSelectedGeneralElectiveCourses(term: term)
+for course in selected {
+    print("已选: \(course.courseName) - \(course.teacherName)")
+}
+
+// 退课（单个退课）
+if let courseToDrop = selected.first {
+    try await app.dropGeneralElectiveCourse(term: term, courseSerial: courseToDrop.courseSerial)
+}
+```
+
+要点：
+- 通识选课受限于后端每次最多 2 门，SDK 自动分片顺序提交。
+- 每个分片若失败，会自动重试一次；两次失败后抛错。
+- SDK 会自动过滤余量为0的课程，不会提交无法选的课程。
+- 需要登录以携带 `Authorization` 与 `yhid`。
+
+### 通识选课前置流程
+
+通识选课同样需要前置校验批次权限：
+
+- 批次权限：`/api/yxk_xkqx_dm_nj`（校验所选批次是否对该年级开放）
+
+```swift
+// 检查批次权限
+let batchCode = "27914" // 从可选课程中获取
+let permission = try await app.checkGeneralElectivePermission(batchCode: batchCode, grade: grade)
+print("最大选课门数: \(permission.maxCourses)") // 通常为2
+```
+
 ## API 文档
 
 ### 核心类型
@@ -341,6 +406,37 @@ try await app.submitTeacherEvaluation(
     scores: [Int],
     comments: String
 ) -> Void
+
+// 获取可选课程列表
+try await app.getCurrentSelectableCourses() -> [SelectableCourse]
+try await app.getCurrentSelectableCoursesWithPreflight(classCode: String, grade: Int) -> [SelectableCourse]
+try await app.getSelectableCourses(term: String, classCode: String) -> [SelectableCourse]
+
+// 选课
+try await app.selectCoursesByIdn(term: String, classCode: String, idns: [Int]) -> Void
+
+// 退课
+try await app.dropCourses(selectedIds: [Int]) -> String
+
+// 选课前置检查
+try await app.checkSelectionPermission(userId: String, functionCode: String) -> SelectionPermission
+try await app.getSelectionBatches(grade: Int) -> [SelectionBatch]
+try await app.checkBatchPermission(batchCode: String, grade: Int) -> BatchPermission
+
+// 获取通识类选修课程可选列表
+try await app.getGeneralElectiveCourses(term: String, classCode: String, grade: Int, campus: String) -> [GeneralElectiveCourse]
+
+// 获取已选通识类选修课程
+try await app.getSelectedGeneralElectiveCourses(term: String) -> [SelectedGeneralElectiveCourse]
+
+// 检查通识类选修课程批次权限
+try await app.checkGeneralElectivePermission(batchCode: String, grade: Int) -> GeneralElectivePermission
+
+// 选通识类选修课程（自动分片，每片最多2门）
+try await app.selectGeneralElectiveCourses(term: String, courses: [GeneralElectiveCourse]) -> Void
+
+// 退通识类选修课程
+try await app.dropGeneralElectiveCourse(term: String, courseSerial: Int) -> Void
 
 // 获取校区列表
 try await app.getElectricityAreas() -> [ElectricityArea]
@@ -457,6 +553,73 @@ public struct SubmittedEvaluation {
     let overallScore: Int         // 总体评分
     let scores: String            // 各项评分
     let comments: String          // 评价意见
+}
+```
+
+#### GeneralElectiveCourse - 通识类选修课程
+```swift
+public struct GeneralElectiveCourse {
+    let term: String              // 学期
+    let courseSerial: Int         // 课程序号
+    let courseName: String        // 课程名称
+    let teacherName: String       // 教师姓名
+    let capacity: Int             // 容量
+    let availableCount: Int       // 可用人数
+    let week: String              // 周次
+    let startSlot: String         // 开始节次
+    let endSlot: String           // 结束节次
+    let location: String          // 上课地点
+    let courseCode: String        // 课程代码
+    let courseType: String        // 课程类型
+    let credit: Double            // 学分
+    let batchCode: String         // 批次代码
+    let batchName: String         // 批次名称
+    let classCode: String         // 班级代码
+    let grade: Int                // 年级
+    let campus: String            // 校区
+    let department: String        // 开课院系
+    let remark: String            // 备注
+}
+```
+
+#### SelectedGeneralElectiveCourse - 已选通识类选修课程
+```swift
+public struct SelectedGeneralElectiveCourse {
+    let term: String              // 学期
+    let courseSerial: Int         // 课程序号
+    let courseName: String        // 课程名称
+    let teacherName: String       // 教师姓名
+    let capacity: Int             // 容量
+    let availableCount: Int       // 可用人数
+    let week: String              // 周次
+    let startSlot: String         // 开始节次
+    let endSlot: String           // 结束节次
+    let location: String          // 上课地点
+    let courseCode: String        // 课程代码
+    let courseType: String        // 课程类型
+    let credit: Double            // 学分
+    let batchCode: String         // 批次代码
+    let batchName: String         // 批次名称
+    let classCode: String         // 班级代码
+    let grade: Int                // 年级
+    let campus: String            // 校区
+    let department: String        // 开课院系
+    let remark: String            // 备注
+    let selectionStatus: String   // 选课状态
+}
+```
+
+#### GeneralElectivePermission - 通识类选修课程权限
+```swift
+public struct GeneralElectivePermission {
+    let term: String              // 学期
+    let batchCode: String         // 批次代码
+    let batchName: String         // 批次名称
+    let maxCourses: Int           // 最大选课门数
+    let startTime: String         // 开始时间
+    let endTime: String           // 结束时间
+    let grade: Int                // 年级
+    let campus: String            // 校区
 }
 ```
 

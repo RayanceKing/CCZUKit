@@ -610,3 +610,177 @@ public struct SelectionPermission: Decodable, Sendable {
     }
 }
 
+// MARK: - 通识类选修课程相关模型
+
+/// 通识类选修课程项（来自 yxk_xk_xh_kxkc_gx）
+public struct GeneralElectiveCourse: Decodable, Sendable {
+    public let term: String                    // xq 学期
+    public let courseSerial: Int               // kcxh 课程序号
+    public let courseCode: String              // kcdm 课程代码
+    public let courseName: String              // kcmc 课程名称
+    public let teacherCode: String             // jsdm 教师代码
+    public let teacherName: String             // jsmc 教师名称
+    public let hours: Int                      // xs 学时
+    public let credits: Double                 // xf 学分
+    public let categoryCode: String            // lbdh 类别代码
+    public let categoryName: String            // lbmc 类别名称
+    public let timeDescription: String         // sj 时间描述
+    public let capacity: Int                   // xxrs 限选人数
+    public let selectedCount: Int              // xkrs 已选人数
+    public let availableCount: Int             // kxrs 可选人数
+    public let batchCode: String               // lbdm 批次代码
+    public let description: String?            // xxsm 详细说明
+    public let campus: String                  // jse 教学地点
+    public let week: Int                       // zc 周次
+    public let startSlot: Int                  // jc1 开始节次
+    public let endSlot: Int                    // jc2 结束节次
+
+    enum CodingKeys: String, CodingKey {
+        case term = "xq"
+        case courseSerial = "kcxh"
+        case courseCode = "kcdm"
+        case courseName = "kcmc"
+        case teacherCode = "jsdm"
+        case teacherName = "jsmc"
+        case hours = "xs"
+        case credits = "xf"
+        case categoryCode = "lbdh"
+        case categoryName = "lbmc"
+        case timeDescription = "sj"
+        case capacity = "xxrs"
+        case selectedCount = "xkrs"
+        case availableCount = "kxrs"
+        case batchCode = "lbdm"
+        case description = "xxsm"
+        case campus = "jse"
+        case week = "zc"
+        case startSlot = "jc1"
+        case endSlot = "jc2"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        term = try c.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
+        courseSerial = try c.decode(Int.self, forKey: .courseSerial)
+        courseCode = try c.decode(String.self, forKey: .courseCode).trimmingCharacters(in: .whitespaces)
+        courseName = try c.decode(String.self, forKey: .courseName).trimmingCharacters(in: .whitespaces)
+        teacherCode = try c.decode(String.self, forKey: .teacherCode).trimmingCharacters(in: .whitespaces)
+        teacherName = try c.decode(String.self, forKey: .teacherName).trimmingCharacters(in: .whitespaces)
+        hours = try c.decode(Int.self, forKey: .hours)
+        credits = try c.decode(Double.self, forKey: .credits)
+        categoryCode = try c.decode(String.self, forKey: .categoryCode).trimmingCharacters(in: .whitespaces)
+        categoryName = try c.decode(String.self, forKey: .categoryName).trimmingCharacters(in: .whitespaces)
+        timeDescription = try c.decode(String.self, forKey: .timeDescription).trimmingCharacters(in: .whitespaces)
+        capacity = try c.decode(Int.self, forKey: .capacity)
+        selectedCount = try c.decode(Int.self, forKey: .selectedCount)
+        availableCount = try c.decode(Int.self, forKey: .availableCount)
+        batchCode = try c.decode(String.self, forKey: .batchCode).trimmingCharacters(in: .whitespaces)
+        description = try c.decodeIfPresent(String.self, forKey: .description)?.trimmingCharacters(in: .whitespaces)
+        campus = try c.decode(String.self, forKey: .campus).trimmingCharacters(in: .whitespaces)
+        week = try c.decode(Int.self, forKey: .week)
+        startSlot = try c.decode(Int.self, forKey: .startSlot)
+        endSlot = try c.decode(Int.self, forKey: .endSlot)
+    }
+}
+
+/// 已选通识类选修课程项（来自 yxk_xk_xh_yxkc_gx）
+public struct SelectedGeneralElectiveCourse: Decodable, Sendable {
+    public let term: String                    // xq 学期
+    public let studentId: String               // xh 学号
+    public let courseSerial: Int               // kcxh 课程序号
+    public let courseCode: String              // kcdm 课程代码
+    public let courseName: String              // kcmc 课程名称
+    public let teacherCode: String             // jsdm 教师代码
+    public let teacherName: String             // jsmc 教师名称
+    public let hours: Int                      // xs 学时
+    public let credits: Double                 // xf 学分
+    public let categoryCode: String            // lbdh 类别代码
+    public let categoryName: String            // lbmc 类别名称
+    public let timeDescription: String         // sj 时间描述
+    public let capacity: Int                   // xxrs 限选人数
+    public let selectedCount: Int              // xkrs 已选人数
+    public let availableCount: Int             // kxrs 可选人数
+    public let batchCode: String               // lbdm 批次代码
+    public let description: String?            // xxsm 详细说明
+    public let campus: String                  // jse 教学地点
+    public let week: Int                       // zc 周次
+    public let startSlot: Int                  // jc1 开始节次
+    public let endSlot: Int                    // jc2 结束节次
+
+    enum CodingKeys: String, CodingKey {
+        case term = "xq"
+        case studentId = "xh"
+        case courseSerial = "kcxh"
+        case courseCode = "kcdm"
+        case courseName = "kcmc"
+        case teacherCode = "jsdm"
+        case teacherName = "jsmc"
+        case hours = "xs"
+        case credits = "xf"
+        case categoryCode = "lbdh"
+        case categoryName = "lbmc"
+        case timeDescription = "sj"
+        case capacity = "xxrs"
+        case selectedCount = "xkrs"
+        case availableCount = "kxrs"
+        case batchCode = "lbdm"
+        case description = "xxsm"
+        case campus = "jse"
+        case week = "zc"
+        case startSlot = "jc1"
+        case endSlot = "jc2"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        term = try c.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
+        studentId = try c.decode(String.self, forKey: .studentId).trimmingCharacters(in: .whitespaces)
+        courseSerial = try c.decode(Int.self, forKey: .courseSerial)
+        courseCode = try c.decode(String.self, forKey: .courseCode).trimmingCharacters(in: .whitespaces)
+        courseName = try c.decode(String.self, forKey: .courseName).trimmingCharacters(in: .whitespaces)
+        teacherCode = try c.decode(String.self, forKey: .teacherCode).trimmingCharacters(in: .whitespaces)
+        teacherName = try c.decode(String.self, forKey: .teacherName).trimmingCharacters(in: .whitespaces)
+        hours = try c.decode(Int.self, forKey: .hours)
+        credits = try c.decode(Double.self, forKey: .credits)
+        categoryCode = try c.decode(String.self, forKey: .categoryCode).trimmingCharacters(in: .whitespaces)
+        categoryName = try c.decode(String.self, forKey: .categoryName).trimmingCharacters(in: .whitespaces)
+        timeDescription = try c.decode(String.self, forKey: .timeDescription).trimmingCharacters(in: .whitespaces)
+        capacity = try c.decode(Int.self, forKey: .capacity)
+        selectedCount = try c.decode(Int.self, forKey: .selectedCount)
+        availableCount = try c.decode(Int.self, forKey: .availableCount)
+        batchCode = try c.decode(String.self, forKey: .batchCode).trimmingCharacters(in: .whitespaces)
+        description = try c.decodeIfPresent(String.self, forKey: .description)?.trimmingCharacters(in: .whitespaces)
+        campus = try c.decode(String.self, forKey: .campus).trimmingCharacters(in: .whitespaces)
+        week = try c.decode(Int.self, forKey: .week)
+        startSlot = try c.decode(Int.self, forKey: .startSlot)
+        endSlot = try c.decode(Int.self, forKey: .endSlot)
+    }
+}
+
+/// 通识类选修课程批次权限（来自 yxk_xkqx_dm_nj）
+public struct GeneralElectivePermission: Decodable, Sendable {
+    public let isAllowed: Bool                 // xk 是否有权选课
+    public let term: String                    // xkxq 对应学期
+    public let remark: String                  // bz 备注
+    public let selectionMethod: String         // cxbmfs 选课方式
+    public let maxCourses: Int                 // xkmc 最多选课数
+
+    enum CodingKeys: String, CodingKey {
+        case isAllowed = "xk"
+        case term = "xkxq"
+        case remark = "bz"
+        case selectionMethod = "cxbmfs"
+        case maxCourses = "xkmc"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let xkInt = try c.decode(Int.self, forKey: .isAllowed)
+        isAllowed = xkInt != 0
+        term = try c.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
+        remark = (try c.decodeIfPresent(String.self, forKey: .remark) ?? "").trimmingCharacters(in: .whitespaces)
+        selectionMethod = (try c.decodeIfPresent(String.self, forKey: .selectionMethod) ?? "").trimmingCharacters(in: .whitespaces)
+        maxCourses = try c.decode(Int.self, forKey: .maxCourses)
+    }
+}
+
