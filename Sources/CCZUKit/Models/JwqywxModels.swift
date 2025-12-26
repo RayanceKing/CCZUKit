@@ -789,27 +789,28 @@ public struct SelectedGeneralElectiveCourse: Decodable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        term = try c.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
-        studentId = try c.decode(String.self, forKey: .studentId).trimmingCharacters(in: .whitespaces)
-        courseSerial = try c.decode(Int.self, forKey: .courseSerial)
-        courseCode = try c.decode(String.self, forKey: .courseCode).trimmingCharacters(in: .whitespaces)
-        courseName = try c.decode(String.self, forKey: .courseName).trimmingCharacters(in: .whitespaces)
-        teacherCode = try c.decode(String.self, forKey: .teacherCode).trimmingCharacters(in: .whitespaces)
-        teacherName = try c.decode(String.self, forKey: .teacherName).trimmingCharacters(in: .whitespaces)
-        hours = try c.decode(Int.self, forKey: .hours)
-        credits = try c.decode(Double.self, forKey: .credits)
-        categoryCode = try c.decode(String.self, forKey: .categoryCode).trimmingCharacters(in: .whitespaces)
-        categoryName = try c.decode(String.self, forKey: .categoryName).trimmingCharacters(in: .whitespaces)
-        timeDescription = try c.decode(String.self, forKey: .timeDescription).trimmingCharacters(in: .whitespaces)
-        capacity = try c.decode(Int.self, forKey: .capacity)
-        selectedCount = try c.decode(Int.self, forKey: .selectedCount)
-        availableCount = try c.decode(Int.self, forKey: .availableCount)
-        batchCode = try c.decode(String.self, forKey: .batchCode).trimmingCharacters(in: .whitespaces)
+        // 使用灵活解析：后端返回字段可能不完全一致，使用 decodeIfPresent 并提供默认值以避免解码失败
+        term = (try c.decodeIfPresent(String.self, forKey: .term) ?? "").trimmingCharacters(in: .whitespaces)
+        studentId = (try c.decodeIfPresent(String.self, forKey: .studentId) ?? "").trimmingCharacters(in: .whitespaces)
+        courseSerial = try c.decodeIfPresent(Int.self, forKey: .courseSerial) ?? 0
+        courseCode = (try c.decodeIfPresent(String.self, forKey: .courseCode) ?? "").trimmingCharacters(in: .whitespaces)
+        courseName = (try c.decodeIfPresent(String.self, forKey: .courseName) ?? "").trimmingCharacters(in: .whitespaces)
+        teacherCode = (try c.decodeIfPresent(String.self, forKey: .teacherCode) ?? "").trimmingCharacters(in: .whitespaces)
+        teacherName = (try c.decodeIfPresent(String.self, forKey: .teacherName) ?? "").trimmingCharacters(in: .whitespaces)
+        hours = try c.decodeIfPresent(Int.self, forKey: .hours) ?? 0
+        credits = try c.decodeIfPresent(Double.self, forKey: .credits) ?? (Double(try c.decodeIfPresent(Int.self, forKey: .credits) ?? 0))
+        categoryCode = (try c.decodeIfPresent(String.self, forKey: .categoryCode) ?? "").trimmingCharacters(in: .whitespaces)
+        categoryName = (try c.decodeIfPresent(String.self, forKey: .categoryName) ?? "").trimmingCharacters(in: .whitespaces)
+        timeDescription = (try c.decodeIfPresent(String.self, forKey: .timeDescription) ?? "").trimmingCharacters(in: .whitespaces)
+        capacity = try c.decodeIfPresent(Int.self, forKey: .capacity) ?? 0
+        selectedCount = try c.decodeIfPresent(Int.self, forKey: .selectedCount) ?? 0
+        availableCount = try c.decodeIfPresent(Int.self, forKey: .availableCount) ?? max(0, capacity - selectedCount)
+        batchCode = (try c.decodeIfPresent(String.self, forKey: .batchCode) ?? "").trimmingCharacters(in: .whitespaces)
         description = try c.decodeIfPresent(String.self, forKey: .description)?.trimmingCharacters(in: .whitespaces)
-        campus = try c.decode(String.self, forKey: .campus).trimmingCharacters(in: .whitespaces)
-        week = try c.decode(Int.self, forKey: .week)
-        startSlot = try c.decode(Int.self, forKey: .startSlot)
-        endSlot = try c.decode(Int.self, forKey: .endSlot)
+        campus = (try c.decodeIfPresent(String.self, forKey: .campus) ?? "").trimmingCharacters(in: .whitespaces)
+        week = try c.decodeIfPresent(Int.self, forKey: .week) ?? 0
+        startSlot = try c.decodeIfPresent(Int.self, forKey: .startSlot) ?? 0
+        endSlot = try c.decodeIfPresent(Int.self, forKey: .endSlot) ?? 0
     }
 }
 

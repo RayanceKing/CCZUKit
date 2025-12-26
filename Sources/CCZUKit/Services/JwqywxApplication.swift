@@ -888,6 +888,13 @@ public final class JwqywxApplication: @unchecked Sendable {
         ]
         if enableDebugLogging { print("[DEBUG] getSelectedGeneralElectiveCourses body=\(body)") }
         let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: body)
+        if enableDebugLogging {
+            if let s = String(data: data, encoding: .utf8) {
+                print("[DEBUG] getSelectedGeneralElectiveCourses raw response: \(s)")
+            } else {
+                print("[DEBUG] getSelectedGeneralElectiveCourses raw response: <binary>")
+            }
+        }
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<SelectedGeneralElectiveCourse>.self, from: data)
         if enableDebugLogging { print("[DEBUG] getSelectedGeneralElectiveCourses courses=\(msg.message.count)") }
