@@ -581,6 +581,19 @@ public final class JwqywxApplication: @unchecked Sendable {
         return msg.message
     }
 
+    /// 获取通识类选修课对应的选课批次（优先返回名称中包含“通识”的批次）
+    /// - Parameter grade: 年级
+    /// - Returns: 找到的批次或 nil
+    public func getGeneralElectiveSelectionBatch(grade: Int) async throws -> SelectionBatch? {
+        let batches = try await getSelectionBatches(grade: grade)
+        if enableDebugLogging { print("[DEBUG] getGeneralElectiveSelectionBatch batches=\(batches.map{$0.name})") }
+        if let found = batches.first(where: { $0.name.contains("通识") || $0.name.contains("通识教育") || $0.name.contains("通识类") }) {
+            return found
+        }
+        // 回退到首个批次（若没有明确标记的通识批次）
+        return batches.first
+    }
+
     /// 检查某批次的选课权限
     /// - Parameters:
     ///   - batchCode: 批次代码（如"0003-004"）
