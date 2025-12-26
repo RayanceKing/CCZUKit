@@ -801,6 +801,64 @@ public final class JwqywxApplication: @unchecked Sendable {
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<GeneralElectiveCourse>.self, from: data)
         if enableDebugLogging { print("[DEBUG] getGeneralElectiveCourses courses=\(msg.message.count)") }
+
+        // 尝试请求实际已选人数并合并（接口：yxk_xk_xkrs_gx），如果失败则返回原始数据
+        do {
+            let actuals = try await getGeneralElectiveActualSelectedCounts(term: term, classCode: classCode, grade: grade, campus: campus)
+            let map = Dictionary(uniqueKeysWithValues: actuals.map { ($0.courseSerial, $0.selectedCount) })
+            let merged: [GeneralElectiveCourse] = msg.message.map { course in
+                if let realSelected = map[course.courseSerial] {
+                    let newAvailable = max(0, course.capacity - realSelected)
+                    return GeneralElectiveCourse(
+                        term: course.term,
+                        courseSerial: course.courseSerial,
+                        courseCode: course.courseCode,
+                        courseName: course.courseName,
+                        teacherCode: course.teacherCode,
+                        teacherName: course.teacherName,
+                        hours: course.hours,
+                        credits: course.credits,
+                        categoryCode: course.categoryCode,
+                        categoryName: course.categoryName,
+                        timeDescription: course.timeDescription,
+                        capacity: course.capacity,
+                        selectedCount: realSelected,
+                        availableCount: newAvailable,
+                        batchCode: course.batchCode,
+                        description: course.description,
+                        campus: course.campus,
+                        week: course.week,
+                        startSlot: course.startSlot,
+                        endSlot: course.endSlot
+                    )
+                } else {
+                    return course
+                }
+            }
+            return merged
+        } catch {
+            if enableDebugLogging { print("[WARN] 合并实际已选人数失败: \(error)") }
+            return msg.message
+        }
+    }
+
+    /// 获取通识类课程的实际已选人数映射（来自 yxk_xk_xkrs_gx）
+    private func getGeneralElectiveActualSelectedCounts(term: String, classCode: String, grade: Int, campus: String) async throws -> [ActualSelectedCount] {
+        guard let authId = authorizationId, let stuNum = studentNumber else { throw CCZUError.notLoggedIn }
+        let url = URL(string: "http://jwqywx.cczu.edu.cn:8180/api/yxk_xk_xkrs_gx")!
+        let body: [String: Any] = [
+            "xq": term,
+            "bh": classCode,
+            "nj": grade,
+            "bmmc": campus,
+            "xh": stuNum,
+            "yhid": authId
+        ]
+        if enableDebugLogging { print("[DEBUG] getGeneralElectiveActualSelectedCounts body=\(body)") }
+        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: body)
+        let decoder = JSONDecoder()
+        let msg = try decoder.decode(Message<ActualSelectedCount>.self, from: data)
+        if enableDebugLogging { print("[DEBUG] getGeneralElectiveActualSelectedCounts items=\(msg.message.count)") }
         return msg.message
     }
 

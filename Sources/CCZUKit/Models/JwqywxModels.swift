@@ -681,6 +681,62 @@ public struct GeneralElectiveCourse: Decodable, Sendable {
         startSlot = try c.decode(Int.self, forKey: .startSlot)
         endSlot = try c.decode(Int.self, forKey: .endSlot)
     }
+
+    /// 可用于程序内构建或复制并修改已选/可选人数的初始化器
+    public init(
+        term: String,
+        courseSerial: Int,
+        courseCode: String,
+        courseName: String,
+        teacherCode: String,
+        teacherName: String,
+        hours: Int,
+        credits: Double,
+        categoryCode: String,
+        categoryName: String,
+        timeDescription: String,
+        capacity: Int,
+        selectedCount: Int,
+        availableCount: Int,
+        batchCode: String,
+        description: String?,
+        campus: String,
+        week: Int,
+        startSlot: Int,
+        endSlot: Int
+    ) {
+        self.term = term
+        self.courseSerial = courseSerial
+        self.courseCode = courseCode
+        self.courseName = courseName
+        self.teacherCode = teacherCode
+        self.teacherName = teacherName
+        self.hours = hours
+        self.credits = credits
+        self.categoryCode = categoryCode
+        self.categoryName = categoryName
+        self.timeDescription = timeDescription
+        self.capacity = capacity
+        self.selectedCount = selectedCount
+        self.availableCount = availableCount
+        self.batchCode = batchCode
+        self.description = description
+        self.campus = campus
+        self.week = week
+        self.startSlot = startSlot
+        self.endSlot = endSlot
+    }
+}
+
+/// 实际已选人数返回项（yxk_xk_xkrs_gx）
+public struct ActualSelectedCount: Decodable, Sendable {
+    public let courseSerial: Int
+    public let selectedCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case courseSerial = "kcxh"
+        case selectedCount = "xkrs"
+    }
 }
 
 /// 已选通识类选修课程项（来自 yxk_xk_xh_yxkc_gx）
