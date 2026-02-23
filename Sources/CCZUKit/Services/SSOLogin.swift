@@ -19,9 +19,7 @@ extension DefaultHTTPClient: SSOLogin {
     
     /// SSO统一登录
     public func ssoUniversalLogin() async throws -> ElinkLoginInfo? {
-        guard let url = URL(string: CCZUConstants.rootSSOLogin) else {
-            throw CCZUError.unknown("Invalid URL")
-        }
+        let url = CCZUConstants.SSO.loginURL
         
         let (_, response) = try await get(url: url)
         
@@ -89,10 +87,7 @@ extension DefaultHTTPClient: SSOLogin {
     
     /// SSO服务登录
     public func ssoServiceLogin(service: String) async throws -> (Data, HTTPURLResponse) {
-        let urlString = service.isEmpty ? CCZUConstants.rootSSOLogin : "\(CCZUConstants.rootSSOLogin)?service=\(service)"
-        guard let url = URL(string: urlString) else {
-            throw CCZUError.unknown("无效的URL")
-        }
+        let url = CCZUConstants.SSO.serviceLoginURL(service: service)
         
         let (data, response) = try await get(url: url)
         
