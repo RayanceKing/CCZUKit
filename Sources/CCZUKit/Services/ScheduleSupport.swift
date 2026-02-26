@@ -38,16 +38,22 @@ struct CourseScheduleRow: Decodable, Sendable {
         return courses.map { course in
             let courseParts = course.split(separator: "/")
             let teacherParts = courseParts.map { part -> String in
-                let courseName = part.split(separator: " ").first.map(String.init) ?? ""
-                if let teacher = teachers[courseName], !teacher.isEmpty {
+                let partText = part.trimmingCharacters(in: .whitespacesAndNewlines)
+                let matchedName = matchedCourseName(for: partText, from: teachers.keys)
+                if let matchedName, let teacher = teachers[matchedName], !teacher.isEmpty {
                     return teacher
                 }
-
-                let normalizedName = normalizedCourseName(courseName)
-                if let teacher = fallbackTeachersByCourseName[courseName], !teacher.isEmpty {
+                if let matchedName,
+                   let teacher = fallbackTeachersByCourseName[matchedName],
+                   !teacher.isEmpty {
                     return teacher
                 }
-                return fallbackTeachersByCourseName[normalizedName] ?? ""
+                let normalizedPartText = normalizedCourseName(partText)
+                let matchedNormalizedName = matchedCourseName(for: normalizedPartText, from: fallbackTeachersByCourseName.keys)
+                if let matchedNormalizedName {
+                    return fallbackTeachersByCourseName[matchedNormalizedName] ?? ""
+                }
+                return ""
             }
             
             let teacher = teacherParts.filter { !$0.isEmpty }.joined(separator: ",/")
@@ -59,6 +65,17 @@ struct CourseScheduleRow: Decodable, Sendable {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "（", with: "(")
             .replacingOccurrences(of: "）", with: ")")
+    }
+
+    private func matchedCourseName(for part: String, from names: Dictionary<String, String>.Keys) -> String? {
+        let normalizedPart = normalizedCourseName(part)
+        return names
+            .filter { !($0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
+            .sorted { $0.count > $1.count }
+            .first { candidate in
+                let normalizedCandidate = normalizedCourseName(candidate)
+                return normalizedPart.hasPrefix(normalizedCandidate)
+            }
     }
 }
 
