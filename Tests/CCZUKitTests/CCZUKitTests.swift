@@ -137,6 +137,24 @@ final class CCZUKitTests: XCTestCase {
         XCTAssertEqual(course2.location, "W10阶")
         XCTAssertEqual(course2.weeks, [15,16,17,18])
     }
+
+    func testCalendarParserWithMissingTeacherSegmentShouldNotFallbackToFirstTeacher() {
+        // 第一段有教师，第二段教师缺失时，不应错误复用第一段教师
+        let matrix: [[RawCourse]] = [
+            [RawCourse(course: "工程经济学 W18阶 9-14,/计算方法 W15阶 1-8,/ ", teacher: "姚岚,/")]
+        ]
+
+        let parsed = CalendarParser.parseWeekMatrix(matrix)
+        XCTAssertEqual(parsed.count, 2)
+
+        let first = parsed[0]
+        XCTAssertEqual(first.name, "工程经济学")
+        XCTAssertEqual(first.teacher, "姚岚")
+
+        let second = parsed[1]
+        XCTAssertEqual(second.name, "计算方法")
+        XCTAssertEqual(second.teacher, "")
+    }
     
     // MARK: - 错误处理测试
     
@@ -709,4 +727,3 @@ final class CCZUKitTests: XCTestCase {
         }
     }
 }
-

@@ -84,9 +84,9 @@ public struct CalendarParser {
 
                     location = locationParts.joined(separator: " ")
                     
-                    // 提取对应的教师信息（按分段索引匹配，避免同一时段多门课都落到第一个老师）
-                    let teacherSource = index < teacherParts.count ? teacherParts[index] : (teacherParts.first ?? "")
-                    let teacher = teacherSource.trimmingCharacters(in: CharacterSet(charactersIn: ",，"))
+                    // 按分段索引提取教师；不存在则留空，避免错误复用第一段教师
+                    let teacherSource = index < teacherParts.count ? teacherParts[index] : ""
+                    let teacher = teacherSource.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ",，")))
                     
                     let course = ParsedCourse(
                         name: name,
