@@ -56,7 +56,8 @@ struct CourseScheduleRow: Decodable, Sendable {
                 return ""
             }
             
-            let teacher = teacherParts.filter { !$0.isEmpty }.joined(separator: ",/")
+            // 保留空字符串占位，确保与课程分段索引对齐，避免后续解析时教师错位
+            let teacher = teacherParts.joined(separator: ",/")
             return RawCourse(course: course, teacher: teacher)
         }
     }
