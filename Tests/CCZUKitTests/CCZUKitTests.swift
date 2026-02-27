@@ -6,8 +6,8 @@ final class CCZUKitTests: XCTestCase {
     private let runTrainingPlanOnly = true
 
     override func setUpWithError() throws {
-        if runTrainingPlanOnly, !self.name.contains("testGetTrainingPlan") {
-            throw XCTSkip("Only run training plan test")
+        if runTrainingPlanOnly, !self.name.contains("testGetTrainingPlan") && !self.name.contains("testLoginAndPrintSchedule") {
+            throw XCTSkip("Only run training plan and schedule tests")
         }
     }
     
@@ -271,37 +271,29 @@ final class CCZUKitTests: XCTestCase {
         // 从环境变量读取账号密码
         let username = ProcessInfo.processInfo.environment["CCZU_USERNAME"] ?? ""
         let password = ProcessInfo.processInfo.environment["CCZU_PASSWORD"] ?? ""
-        
+
         // 若未设置，跳过此测试
         if username.isEmpty || password.isEmpty {
             throw XCTSkip("未设置CCZU_USERNAME/CCZU_PASSWORD，跳过集成测试")
         }
-        
+
         let client = DefaultHTTPClient(username: username, password: password)
-        
+
         // 1. SSO统一登录（可能走WebVPN）
-        let loginInfo = try await client.ssoUniversalLogin()
-        if let info = loginInfo {
-            print("[SSO] WebVPN登录成功: userid=\(info.userid)")
-        } else {
-            print("[SSO] 普通登录成功")
-        }
-        
+        _ = try await client.ssoUniversalLogin()
+
         // 2. 教务企业微信登录
         let app = JwqywxApplication(client: client)
-        let userMessage = try await app.login()
-        let userName = userMessage.message.first?.username ?? ""
-        print("[JWQYWX] 登录成功: username=\(userName)")
-        
+        _ = try await app.login()
+
         // 3. 获取当前学期课表并解析
         let scheduleMatrix = try await app.getCurrentClassSchedule()
         let courses = CalendarParser.parseWeekMatrix(scheduleMatrix)
-        
+
         // 4. 控制台输出课表（按星期与节次排序）
-        print("\n=== 当前学期课表 ===")
         let groupedByDay = Dictionary(grouping: courses) { $0.dayOfWeek }
         let weekdayNames = [1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "日"]
-        
+
         for day in 1...7 {
             guard let dayCourses = groupedByDay[day], !dayCourses.isEmpty else { continue }
             let dayName = weekdayNames[day] ?? ""
@@ -314,9 +306,8 @@ final class CCZUKitTests: XCTestCase {
                 print("    周次: \(weeksStr)")
             }
         }
-        
-        // 基本断言，至少解析到0门课（允许为空但流程需完整）
-        XCTAssertNotNil(courses)
+
+        print("\n总共解析出 \(courses.count) 门课程")
     }
     
     // MARK: - 集成测试: 考试安排查询
