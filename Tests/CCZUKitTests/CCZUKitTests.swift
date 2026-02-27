@@ -133,6 +133,7 @@ final class CCZUKitTests: XCTestCase {
         // 第二门课
         let course2 = parsed[1]
         XCTAssertEqual(course2.name, "生涯教育与就业指导（一）")
+        XCTAssertNotEqual(course2.teacher, "顾晟燊(主)")
         XCTAssertEqual(course2.location, "W10阶")
         XCTAssertEqual(course2.weeks, [15,16,17,18])
     }
@@ -708,5 +709,4 @@ final class CCZUKitTests: XCTestCase {
         }
     }
 }
-
 

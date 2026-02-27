@@ -38,7 +38,8 @@ public struct CalendarParser {
                 // 格式示例: "高等数学 1-16周 教学楼A101"
                 let courseParts = rawCourse.course.split(separator: "/")
                 
-                for part in courseParts {
+                let teacherParts = rawCourse.teacher.components(separatedBy: ",/")
+                for (index, part) in courseParts.enumerated() {
                     let trimmed = part.trimmingCharacters(in: .whitespaces)
                     if trimmed.isEmpty { continue }
                     
@@ -83,9 +84,9 @@ public struct CalendarParser {
 
                     location = locationParts.joined(separator: " ")
                     
-                    // 提取对应的教师信息
-                    let teacherParts = rawCourse.teacher.components(separatedBy: ",/")
-                    let teacher = (teacherParts.first ?? "").trimmingCharacters(in: CharacterSet(charactersIn: ",，"))
+                    // 提取对应的教师信息（按分段索引匹配，避免同一时段多门课都落到第一个老师）
+                    let teacherSource = index < teacherParts.count ? teacherParts[index] : (teacherParts.first ?? "")
+                    let teacher = teacherSource.trimmingCharacters(in: CharacterSet(charactersIn: ",，"))
                     
                     let course = ParsedCourse(
                         name: name,
