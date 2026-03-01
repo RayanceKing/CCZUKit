@@ -24,8 +24,15 @@ CCZUKit/
 │   │   └── JwqywxModels.swift # 教务微信数据模型
 │   │
 │   ├── Services/             # 服务实现
+│   │   ├── Application.swift # JwqywxApplication 主类定义
 │   │   ├── SSOLogin.swift    # SSO统一登录服务
-│   │   └── JwqywxApplication.swift # 教务企业微信应用
+│   │   ├── Auth.swift        # 身份验证和授权
+│   │   ├── Academic.swift    # 成绩、绩点、评价等学术功能
+│   │   ├── ScheduleSupport.swift # 课表支持功能
+│   │   ├── Selection.swift   # 课程选修功能
+│   │   ├── GeneralElective.swift # 通识选修课程
+│   │   ├── Electricity.swift # 电费查询功能
+│   │   └── TrainingPlanService.swift # 培养方案查询
 │   │
 │   └── Utils/                # 工具类
 │       └── CalendarParser.swift # 课表解析工具
@@ -86,28 +93,65 @@ CCZUKit/
 
 ### Services - 服务模块
 
-#### SSOLogin.swift
-SSO统一登录服务实现:
-- `SSOLogin` 协议: 定义SSO登录接口
-- `DefaultHTTPClient` 扩展: 实现SSO登录功能
-- 支持两种登录模式:
-  - WebVPN模式
-  - 普通模式
-- 自动处理重定向
-- 解析隐藏表单字段
-- Cookie管理
 
-#### JwqywxApplication.swift
-教务企业微信应用实现:
-- `JwqywxApplication`: 教务应用主类
-- 功能:
-  - 登录教务系统
-  - 查询成绩
-  - 查询学分绩点
-  - 获取学期列表
-  - 查询课表(支持指定学期和当前学期)
-- 自动管理认证token
-- 支持动态JSON解析
+#### Application.swift
+中心应用类定义:
+- `JwqywxApplication`: 教务企业微信应用主类
+- 统一的登录接口
+- Token管理和会话保持
+- 自动请求头配置
+
+#### Auth.swift
+身份验证和授权:
+- SSO集成登录
+- 教务系统登录
+- Token获取和刷新
+- 权限检查接口
+
+#### Academic.swift
+学术信息查询:
+- 成绩查询（单学期/全部）
+- 学分绩点查询
+- 学期列表获取
+- 考试安排查询
+- 学生基本信息
+- 可评价课程列表
+- 已提交评价信息
+- 提交教师评价
+
+#### ScheduleSupport.swift
+课表相关功能:
+- 指定学期课表查询
+- 当前学期课表查询
+- 课表矩阵解析
+- 课程信息补充
+
+#### Selection.swift
+课程选修功能:
+- 获取可选课程
+- 批量选课（支持分片和重试）
+- 批量退课
+- 选课权限检查
+- 选课批次查询
+
+#### GeneralElective.swift
+通识选修课程（抢课）:
+- 获取通识课程列表
+- 获取已选课程
+- 批量选课（每次最多2门）
+- 退课
+- 权限检查
+
+#### Electricity.swift
+电费查询功能:
+- 获取校区列表
+- 获取建筑物列表
+- 实时电费查询
+
+#### TrainingPlanService.swift
+培养方案相关:
+- 获取培养方案
+- 课程缓存管理
 
 ### Utils - 工具模块
 
@@ -172,7 +216,11 @@ CCZUKit (无外部依赖)
 | `src/base/typing.rs` | `Models/CCZUError.swift` |
 | `src/impls/client.rs` | `Core/HTTPClient.swift` |
 | `src/impls/login/sso.rs` | `Services/SSOLogin.swift` |
-| `src/impls/apps/wechat/jwqywx.rs` | `Services/JwqywxApplication.swift` |
+| `src/impls/apps/wechat/jwqywx.rs` | `Services/Application.swift`（+ 功能模块） |
+| `src/impls/apps/wechat/grades.rs` | `Services/Academic.swift` |
+| `src/impls/apps/wechat/schedule.rs` | `Services/ScheduleSupport.swift` |
+| `src/impls/apps/wechat/selection.rs` | `Services/Selection.swift` |
+| `src/impls/apps/wechat/electricity.rs` | `Services/Electricity.swift` |
 | `src/extension/calendar.rs` | `Utils/CalendarParser.swift` |
 | `src/internals/fields.rs` | `Core/Constants.swift` |
 
