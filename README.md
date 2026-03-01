@@ -14,8 +14,12 @@ CCZUKit 是常州大学官方服务的 Swift 客户端库,提供了便捷的 API
 ## 特性
 
 - ✅ **SSO 统一登录** - 支持普通模式和 WebVPN 模式
-- ✅ **教务企业微信** - 成绩查询、课表查询、学分绩点查询
-- ✅ **课表解析** - 自动解析课程信息,包括周次、时间、地点
+- ✅ **教务企业微信** - 成绩、课表、考试、学分绩点、学生信息查询
+- ✅ **课表解析** - 自动解析课程信息,包括周次、时间、地点、教师
+- ✅ **考试安排** - 查询当前和指定学期的考试时间与地点
+- ✅ **教师评价** - 获取可评价课程列表和提交评价
+- ✅ **课程选修** - 支持普通选课和通识类选修课抢课
+- ✅ **电费查询** - 实时查询宿舍电费情况
 - ✅ **类型安全** - 完整的 Swift 类型系统支持
 - ✅ **现代异步** - 基于 Swift Concurrency (async/await)
 - ✅ **跨平台** - 支持 iOS、macOS、watchOS、tvOS
@@ -34,13 +38,13 @@ CCZUKit 是常州大学官方服务的 Swift 客户端库,提供了便捷的 API
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/CCZU-OSSA/cczuni.git", from: "0.1.0")
+    .package(url: "https://github.com/CCZU-OSSA/CCZUKit.git", from: "0.1.0")
 ]
 ```
 
 或在 Xcode 中:
 1. File → Add Package Dependencies
-2. 输入仓库 URL: `https://github.com/CCZU-OSSA/cczuni.git`
+2. 输入仓库 URL: `https://github.com/CCZU-OSSA/CCZUKit.git`
 3. 选择版本并添加到项目
 
 ## 使用示例
