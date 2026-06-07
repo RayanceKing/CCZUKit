@@ -6,7 +6,10 @@ final class CCZUKitTests: XCTestCase {
     private let runTrainingPlanOnly = true
 
     override func setUpWithError() throws {
-        if runTrainingPlanOnly, !self.name.contains("testGetTrainingPlan") && !self.name.contains("testLoginAndPrintSchedule") {
+        if runTrainingPlanOnly,
+           !self.name.contains("testGetTrainingPlan"),
+           !self.name.contains("testLoginAndPrintSchedule"),
+           !self.name.contains("testEvaluatableClassDecodingAllowsNullTeacherId") {
             throw XCTSkip("Only run training plan and schedule tests")
         }
     }
@@ -483,6 +486,36 @@ final class CCZUKitTests: XCTestCase {
     }
     
     // MARK: - 教师评价功能测试
+
+    func testEvaluatableClassDecodingAllowsNullTeacherId() throws {
+        let json = """
+        {
+          "status": 0,
+          "message": [
+            {
+              "kch": "72454011",
+              "kcdm": "72454011",
+              "jsmc": "徐耀飞",
+              "pjqk": "",
+              "lbdh": "A1",
+              "pjid": 0,
+              "jsid": null,
+              "jsdm": "00003699",
+              "kcmc": "形势与政策(4)",
+              "bh": "24001803"
+            }
+          ]
+        }
+        """
+
+        let data = try XCTUnwrap(json.data(using: .utf8))
+        let message = try JSONDecoder().decode(Message<EvaluatableClass>.self, from: data)
+
+        XCTAssertEqual(message.message.count, 1)
+        XCTAssertEqual(message.message[0].teacherId, "")
+        XCTAssertEqual(message.message[0].teacherCode, "00003699")
+        XCTAssertEqual(message.message[0].courseName, "形势与政策(4)")
+    }
     
     func testGetEvaluatableClasses() async throws {
         guard let username = ProcessInfo.processInfo.environment["CCZU_USERNAME"],
