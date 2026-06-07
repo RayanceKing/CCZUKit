@@ -284,7 +284,7 @@ public struct EvaluatableClass: Decodable, Sendable {
         teacherName = try container.decode(String.self, forKey: .teacherName).trimmingCharacters(in: .whitespaces)
         evaluationStatus = try container.decodeIfPresent(String.self, forKey: .evaluationStatus)?.trimmingCharacters(in: .whitespaces)
         evaluationId = try container.decode(Int.self, forKey: .evaluationId)
-        teacherId = try container.decode(String.self, forKey: .teacherId).trimmingCharacters(in: .whitespaces)
+        teacherId = (try container.decodeIfPresent(String.self, forKey: .teacherId) ?? "").trimmingCharacters(in: .whitespaces)
     }
 }
 
