@@ -138,7 +138,7 @@ public enum TrainingPlanParser {
 
         throw CCZUError.unknown("Unexpected training plan response format")
     }
-    
+
     private static func aggregate(items: [RawTrainingPlanItem], basicInfo: StudentBasicInfo?) -> TrainingPlan {
         let majorName = basicInfo?.major.trimmingCharacters(in: .whitespacesAndNewlines)
             ?? items.first?.zymc?.trimmingCharacters(in: .whitespacesAndNewlines)

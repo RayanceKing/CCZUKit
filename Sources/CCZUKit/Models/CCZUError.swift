@@ -11,7 +11,7 @@ public enum CCZUError: LocalizedError {
     case decodingError(Error)
     case missingData(String)
     case unknown(String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .networkError(let error):

@@ -8,7 +8,7 @@ public enum CCZUConstants {
     public static let rootVPNURL = "https://zmvpn.cczu.edu.cn"
     /// 教务企业微信应用根地址
     public static let wechatAppAPI = "http://jwqywx.cczu.edu.cn"
-    
+
     public static let defaultHeaders: [String: String] = [
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Accept": "application/json, text/plain, */*",

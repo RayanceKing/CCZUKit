@@ -13,7 +13,7 @@ extension JwqywxApplication {
             "yhid": authId
         ]
         if enableDebugLogging { print("[DEBUG] getGeneralElectiveCourses body=\(body)") }
-        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: body)
+        let (data, _) = try await postAuthenticatedJSON(url: url, anyJSON: body)
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<GeneralElectiveCourse>.self, from: data)
         if enableDebugLogging { print("[DEBUG] getGeneralElectiveCourses courses=\(msg.message.count)") }
@@ -54,7 +54,7 @@ extension JwqywxApplication {
             return merged
         } catch {
             if enableDebugLogging { print("[WARN] 合并实际已选人数失败: \(error)") }
-            return msg.message
+            throw error
         }
     }
 
@@ -71,7 +71,7 @@ extension JwqywxApplication {
             "yhid": authId
         ]
         if enableDebugLogging { print("[DEBUG] getGeneralElectiveActualSelectedCounts body=\(body)") }
-        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: body)
+        let (data, _) = try await postAuthenticatedJSON(url: url, anyJSON: body)
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<ActualSelectedCount>.self, from: data)
         if enableDebugLogging { print("[DEBUG] getGeneralElectiveActualSelectedCounts items=\(msg.message.count)") }
@@ -90,7 +90,7 @@ extension JwqywxApplication {
             "yhid": authId
         ]
         if enableDebugLogging { print("[DEBUG] getSelectedGeneralElectiveCourses body=\(body)") }
-        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: body)
+        let (data, _) = try await postAuthenticatedJSON(url: url, json: body)
         if enableDebugLogging {
             if let s = String(data: data, encoding: .utf8) {
                 print("[DEBUG] getSelectedGeneralElectiveCourses raw response: \(s)")
@@ -118,7 +118,7 @@ extension JwqywxApplication {
             "yhid": authId
         ]
         if enableDebugLogging { print("[DEBUG] checkGeneralElectivePermission body=\(body)") }
-        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: body)
+        let (data, _) = try await postAuthenticatedJSON(url: url, anyJSON: body)
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<GeneralElectivePermission>.self, from: data)
         guard let perm = msg.message.first else { throw CCZUError.missingData("未获得通识选课权限") }
@@ -165,30 +165,17 @@ extension JwqywxApplication {
             ]
             if enableDebugLogging { print("[DEBUG] yxk_xk_insert_ggxx chunk size=\(chunk.count), courseSerial=\(chunk[0].courseSerial)") }
 
-            // 发送请求，失败重试一次
-            var lastError: Error?
-            var success = false
-            for _ in 0..<2 { // 最多2次（含首次）
-                do {
-                    let (data, response) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: payload)
-                    guard response.statusCode == 200 else {
-                        throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
-                    }
-                    let res = try decoder.decode(SimpleJWResponse.self, from: data)
-                    if enableDebugLogging { print("[DEBUG] yxk_xk_insert_ggxx status=\(res.status) messageInt=\(String(describing: res.messageInt)) messageString=\(String(describing: res.messageString))") }
-                    if res.status == 0 {
-                        success = true
-                        break
-                    } else {
-                        throw CCZUError.unknown("通识选课失败: status=\(res.status), message=\(res.messageString ?? String(res.messageInt ?? -1))")
-                    }
-                } catch {
-                    lastError = error
-                    // 继续下一次尝试
-                }
+            // Only an explicit authentication rejection is retried by the transport.
+            let (data, response) = try await postAuthenticatedJSON(url: url, anyJSON: payload)
+            guard response.statusCode == 200 else {
+                throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
             }
-            if !success {
-                throw lastError ?? CCZUError.unknown("通识选课失败且重试后仍未成功")
+            let res = try decoder.decode(SimpleJWResponse.self, from: data)
+            if enableDebugLogging { print("[DEBUG] yxk_xk_insert_ggxx status=\(res.status) messageInt=\(String(describing: res.messageInt)) messageString=\(String(describing: res.messageString))") }
+            if res.status == 0 {
+                // Accepted; continue to the next chunk.
+            } else {
+                throw CCZUError.unknown("通识选课失败: status=\(res.status), message=\(res.messageString ?? String(res.messageInt ?? -1))")
             }
         }
     }
@@ -208,7 +195,7 @@ extension JwqywxApplication {
             "yhid": authId
         ]
         if enableDebugLogging { print("[DEBUG] dropGeneralElectiveCourse body=\(body)") }
-        let (data, response) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: body)
+        let (data, response) = try await postAuthenticatedJSON(url: url, anyJSON: body)
         guard response.statusCode == 200 else {
             throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
         }

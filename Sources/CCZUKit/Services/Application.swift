@@ -1,7 +1,10 @@
 import Foundation
 
 /// 教务企业微信应用
-public final class JwqywxApplication: @unchecked Sendable {
+@MainActor
+public final class JwqywxApplication {
+    var loginTask: Task<Message<LoginUserData>, Error>?
+    var authenticationGeneration = 0
     let client: DefaultHTTPClient
     var authorizationToken: String?
     var authorizationId: String?
