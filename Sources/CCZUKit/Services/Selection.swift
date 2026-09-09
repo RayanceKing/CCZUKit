@@ -10,7 +10,7 @@ extension JwqywxApplication {
             "yhid": authId
         ]
         if enableDebugLogging { print("[DEBUG] checkSelectionPermission body=\(body)") }
-        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: body)
+        let (data, _) = try await postAuthenticatedJSON(url: url, json: body)
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<[String: String]>.self, from: data)
         if msg.status != 0 { throw CCZUError.unknown("选课权限检查失败") }
@@ -28,7 +28,7 @@ extension JwqywxApplication {
             "nj": grade
         ]
         if enableDebugLogging { print("[DEBUG] getSelectionBatches body=\(body)") }
-        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: body)
+        let (data, _) = try await postAuthenticatedJSON(url: url, anyJSON: body)
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<SelectionBatch>.self, from: data)
         if enableDebugLogging { print("[DEBUG] getSelectionBatches batches=\(msg.message.count)") }
@@ -62,7 +62,7 @@ extension JwqywxApplication {
             "yhid": authId
         ]
         if enableDebugLogging { print("[DEBUG] checkBatchPermission body=\(body)") }
-        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: body)
+        let (data, _) = try await postAuthenticatedJSON(url: url, anyJSON: body)
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<SelectionPermission>.self, from: data)
         guard let perm = msg.message.first else { throw CCZUError.missingData("未获得选课权限") }
@@ -104,7 +104,7 @@ extension JwqywxApplication {
             "yhid": authId
         ]
         if enableDebugLogging { print("[DEBUG] xk_xh_kbk body=\(body)") }
-        let (data, _) = try await client.postJSON(url: url, headers: customHeaders, json: body)
+        let (data, _) = try await postAuthenticatedJSON(url: url, json: body)
         let decoder = JSONDecoder()
         let msg = try decoder.decode(Message<SelectableCourse>.self, from: data)
         if enableDebugLogging { print("[DEBUG] xk_xh_kbk items=\(msg.message.count)") }
@@ -181,30 +181,17 @@ extension JwqywxApplication {
             ]
             if enableDebugLogging { print("[DEBUG] xk_insert_xfz chunk size=\(chunk.count)") }
 
-            // 通过 JSONSerialization 发送（保持与 postJSON 一致的 headers），失败重试一次
-            var lastError: Error?
-            var success = false
-            for _ in 0..<2 { // 最多2次（含首次）
-                do {
-                    let (data, response) = try await client.postJSON(url: url, headers: customHeaders, anyJSON: payload)
-                    guard response.statusCode == 200 else {
-                        throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
-                    }
-                    let res = try decoder.decode(SimpleJWResponse.self, from: data)
-                    if enableDebugLogging { print("[DEBUG] xk_insert_xfz status=\(res.status) messageInt=\(String(describing: res.messageInt)) messageString=\(String(describing: res.messageString))") }
-                    if res.status == 0 {
-                        success = true
-                        break
-                    } else {
-                        throw CCZUError.unknown("选课失败: status=\(res.status), message=\(res.messageString ?? String(res.messageInt ?? -1))")
-                    }
-                } catch {
-                    lastError = error
-                    // 继续下一次尝试
-                }
+            // Only an explicit authentication rejection is retried by the transport.
+            let (data, response) = try await postAuthenticatedJSON(url: url, anyJSON: payload)
+            guard response.statusCode == 200 else {
+                throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
             }
-            if !success {
-                throw lastError ?? CCZUError.unknown("选课失败且重试后仍未成功")
+            let res = try decoder.decode(SimpleJWResponse.self, from: data)
+            if enableDebugLogging { print("[DEBUG] xk_insert_xfz status=\(res.status) messageInt=\(String(describing: res.messageInt)) messageString=\(String(describing: res.messageString))") }
+            if res.status == 0 {
+                // Accepted; continue to the next chunk.
+            } else {
+                throw CCZUError.unknown("选课失败: status=\(res.status), message=\(res.messageString ?? String(res.messageInt ?? -1))")
             }
         }
     }
@@ -231,7 +218,7 @@ extension JwqywxApplication {
             "idnlist": idnlist,
             "yhid": authId
         ]
-        let (data, response) = try await client.postJSON(url: url, headers: customHeaders, json: body)
+        let (data, response) = try await postAuthenticatedJSON(url: url, json: body)
         guard response.statusCode == 200 else {
             throw CCZUError.unknown("HTTP Status code: \(response.statusCode)")
         }

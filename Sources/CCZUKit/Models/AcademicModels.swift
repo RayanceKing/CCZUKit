@@ -13,7 +13,7 @@ public struct LoginUserData: Decodable, Sendable {
     public let gender: String
     public let permission: String
     public let id: String
-    
+
     enum CodingKeys: String, CodingKey {
         case userid = "yhdm"
         case username = "yhmc"
@@ -49,7 +49,7 @@ public struct CourseGrade: Decodable, Sendable {
     public let ident: Int
     public let grade: Double
     public let gradePoints: Double
-    
+
     enum CodingKeys: String, CodingKey {
         case classId = "bh"
         case className = "bj"
@@ -83,7 +83,7 @@ public struct StudentPoint: Decodable, Sendable {
     public let studentBirthday: String
     public let studentXid: String
     public let gradePoints: Double
-    
+
     enum CodingKeys: String, CodingKey {
         case classId = "bh"
         case className = "bj"
@@ -100,7 +100,7 @@ public struct StudentPoint: Decodable, Sendable {
 // MARK: - 学期信息
 public struct Term: Decodable, Sendable {
     public let term: String
-    
+
     enum CodingKeys: String, CodingKey {
         case term = "xq"
     }
@@ -110,7 +110,7 @@ public struct Term: Decodable, Sendable {
 public struct RawCourse: Sendable {
     public let course: String
     public let teacher: String
-    
+
     public init(course: String, teacher: String) {
         self.course = course
         self.teacher = teacher
@@ -145,7 +145,7 @@ public struct ExamArrangement: Decodable, Sendable {
     public let startTeacherSlot: Int?
     public let endTeacherSlot: Int?
     public let classShortName: String          // 班级简称
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case courseId = "kch"
@@ -174,7 +174,7 @@ public struct ExamArrangement: Decodable, Sendable {
         case endTeacherSlot = "jkjs2"
         case classShortName = "bj"
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(Int.self, forKey: .id)
@@ -225,7 +225,7 @@ public struct StudentBasicInfo: Decodable, Sendable {
     public let studentStatus: String           // 学籍情况
     public let studentNumber: String           // 学号
     public let dormitoryNumber: String         // 宿舍编号
-    
+
     enum CodingKeys: String, CodingKey {
         case name = "xm"
         case major = "zymc"
@@ -259,7 +259,7 @@ public struct EvaluatableClass: Decodable, Sendable {
     public let evaluationStatus: String?       // 评价状态 (pjqk)
     public let evaluationId: Int               // 评价ID (pjid)
     public let teacherId: String               // 教师ID (jsid)
-    
+
     enum CodingKeys: String, CodingKey {
         case classId = "bh"
         case courseCode = "kcdm"
@@ -272,7 +272,7 @@ public struct EvaluatableClass: Decodable, Sendable {
         case evaluationId = "pjid"
         case teacherId = "jsid"
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         classId = try container.decode(String.self, forKey: .classId).trimmingCharacters(in: .whitespaces)
@@ -300,7 +300,7 @@ public struct SubmittedEvaluation: Decodable, Sendable {
     public let overallScore: Int               // 总体评分 (zhdf)
     public let scores: String                  // 各项评分 (pjjg)
     public let comments: String                // 评价意见 (yjjy)
-    
+
     enum CodingKeys: String, CodingKey {
         case term = "xq"
         case evaluationId = "pjid"
@@ -313,7 +313,7 @@ public struct SubmittedEvaluation: Decodable, Sendable {
         case scores = "pjjg"
         case comments = "yjjy"
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         term = try container.decode(String.self, forKey: .term).trimmingCharacters(in: .whitespaces)
@@ -334,7 +334,7 @@ public struct SubmittedEvaluation: Decodable, Sendable {
 public struct ElinkLoginInfo: Decodable, Sendable {
     public let userid: String
     public let username: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case userid
         case username

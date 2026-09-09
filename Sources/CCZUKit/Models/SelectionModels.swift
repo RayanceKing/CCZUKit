@@ -120,14 +120,14 @@ public struct SelectionBatch: Decodable, Sendable {
         let now = Date()
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
+
         if let begin = formatter.date(from: beginDate),
            let end = formatter.date(from: endDate) {
             return now >= begin && now <= end
         }
         return false
     }
-    
+
     /// 是否允许选课（等同于 isSelectable）
     public var isAllowed: Bool {
         return isSelectable
