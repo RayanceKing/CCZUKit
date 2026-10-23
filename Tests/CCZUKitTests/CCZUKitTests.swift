@@ -2,6 +2,7 @@ import XCTest
 @testable import CCZUKit
 
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
+@MainActor
 final class CCZUKitTests: XCTestCase {
     private let runTrainingPlanOnly = true
 

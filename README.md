@@ -20,6 +20,7 @@ CCZUKit 是常州大学官方服务的 Swift 客户端库,提供了便捷的 API
 - ✅ **教师评价** - 获取可评价课程列表和提交评价
 - ✅ **课程选修** - 支持普通选课和通识类选修课抢课
 - ✅ **电费查询** - 实时查询宿舍电费情况
+- ✅ **图书馆选座** - CAS 登录、楼栋/房间/座位解析、预约查询与退选
 - ✅ **类型安全** - 完整的 Swift 类型系统支持
 - ✅ **现代异步** - 基于 Swift Concurrency (async/await)
 - ✅ **跨平台** - 支持 iOS、macOS、watchOS、tvOS
@@ -221,6 +222,33 @@ if electricity.errcode == 0 {
     print("查询失败: \(electricity.errmsg)")
 }
 ```
+
+### 图书馆选座
+
+图书馆系统使用独立的 CAS 登录和座位令牌。请求签名算法由座位系统前端动态提供，调用时通过 `requestSigner` 注入：
+
+```swift
+let client = DefaultHTTPClient(username: "你的学号", password: "你的密码")
+let library = LibrarySeatApplication(client: client) { url, requestID, requestDate in
+    // 按座位系统当前前端实现生成 64 位十六进制 HMAC
+    try makeLibraryHMAC(url: url, requestID: requestID, requestDate: requestDate)
+}
+
+let user = try await library.login()
+let buildings = try await library.getBuildings()
+let seats = try await library.searchSeats(
+    roomId: 1,
+    date: "2026-09-18",
+    begin: 840,
+    end: 900
+)
+let reservations = try await library.getReservations()
+if let reservation = reservations.first {
+    _ = try await library.cancelReservation(id: reservation.id)
+}
+```
+
+`reserveSeat` 还需要验证码流程返回的 `authId`，因为该字段不能从账号密码直接计算。
 
 ### 选课（含批量分片与重试）
 

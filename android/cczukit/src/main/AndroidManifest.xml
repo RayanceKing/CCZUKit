@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 教务 / WebVPN / 电费接口均为 http，需要允许明文流量 -->
+    <application android:usesCleartextTraffic="true" />
+
+</manifest>

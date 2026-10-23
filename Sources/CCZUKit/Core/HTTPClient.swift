@@ -120,10 +120,16 @@ extension HTTPClient {
 
     /// POST Form请求
     public func postForm(url: URL, headers: [String: String]? = nil, form: [String: String]) async throws -> (Data, HTTPURLResponse) {
+        let fields = form.map { ($0.key, $0.value) }
+        return try await postForm(url: url, headers: headers, fields: fields)
+    }
+
+    /// POST Form请求（保留字段顺序）
+    public func postForm(url: URL, headers: [String: String]? = nil, fields: [(String, String)]) async throws -> (Data, HTTPURLResponse) {
         var allHeaders = headers ?? [:]
         allHeaders["Content-Type"] = "application/x-www-form-urlencoded"
 
-        let formString = form.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
+        let formString = fields.map { "\($0.0)=\($0.1.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.1)" }
             .joined(separator: "&")
         let formData = formString.data(using: .utf8)
 
@@ -133,5 +139,24 @@ extension HTTPClient {
     /// POST Form请求（formData 别名）
     public func postForm(url: URL, headers: [String: String]? = nil, formData: [String: String]) async throws -> (Data, HTTPURLResponse) {
         return try await postForm(url: url, headers: headers, form: formData)
+    }
+
+    public func postMultipart(
+        url: URL,
+        headers: [String: String]? = nil,
+        fields: [String: String],
+        boundary: String = "Boundary-\(UUID().uuidString)"
+    ) async throws -> (Data, HTTPURLResponse) {
+        var allHeaders = headers ?? [:]
+        allHeaders["Content-Type"] = "multipart/form-data; boundary=\(boundary)"
+
+        var body = Data()
+        for (name, value) in fields {
+            body.append(Data("--\(boundary)\r\n".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".utf8))
+            body.append(Data("\(value)\r\n".utf8))
+        }
+        body.append(Data("--\(boundary)--\r\n".utf8))
+        return try await post(url: url, headers: allHeaders, body: body)
     }
 }
