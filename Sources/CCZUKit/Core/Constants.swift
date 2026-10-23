@@ -23,7 +23,7 @@ public extension CCZUConstants {
         /// 教务企业微信请求 Referer
         public static let referer = "http://jwqywx.cczu.edu.cn/"
         /// 教务企业微信 API 基础地址
-        public static let apiBase = "http://jwqywx.cczu.edu.cn:8180/api"
+        public static let apiBase = "http://jwqywx.cczu.edu.cn/api"
 
         /// 认证请求头字段名
         public static let authHeader = "Authorization"

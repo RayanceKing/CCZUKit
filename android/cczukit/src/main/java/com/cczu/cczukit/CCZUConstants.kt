@@ -20,7 +20,7 @@ public object CCZUConstants {
     public object Jwqywx {
         public const val origin: String = "http://jwqywx.cczu.edu.cn"
         public const val referer: String = "http://jwqywx.cczu.edu.cn/"
-        public const val apiBase: String = "http://jwqywx.cczu.edu.cn:8180/api"
+        public const val apiBase: String = "http://jwqywx.cczu.edu.cn/api"
 
         public const val authHeader: String = "Authorization"
         public const val bearerPrefix: String = "Bearer "
