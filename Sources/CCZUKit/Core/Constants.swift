@@ -23,7 +23,7 @@ public extension CCZUConstants {
         /// 教务企业微信请求 Referer
         public static let referer = "http://jwqywx.cczu.edu.cn/"
         /// 教务企业微信 API 基础地址
-        public static let apiBase = "http://jwqywx.cczu.edu.cn:8180/api"
+        public static let apiBase = "http://jwqywx.cczu.edu.cn/api"
 
         /// 认证请求头字段名
         public static let authHeader = "Authorization"
@@ -123,5 +123,27 @@ public extension CCZUConstants {
             ("武进校区", "武进校区", "0030000000002502"),
             ("西太湖校区1-7,10-11", "西太湖校区1-7,10-11", "0030000000002503")
         ]
+    }
+
+    enum LibrarySeat {
+        public static let baseURL = URL(string: "http://zuowei.cczu.edu.cn")!
+        public static let ssoService = "http://zuowei.cczu.edu.cn/remote//static/casAuth/getServiceByVerifyTicket/casLogin"
+        public static let referer = "http://zuowei.cczu.edu.cn/libseat/"
+        public static let loginType = "MOBILE"
+
+        public static let ssoAuthPath = "/rest/ssoAuth"
+        public static let userPath = "/rest/v2/user"
+        public static let filtersPath = "/rest/v2/free/filters"
+        public static let floorsPath = "/rest/v2/room/floors"
+        public static let layoutPath = "/rest/v2/room/layoutByDate"
+        public static let searchSeatsPath = "/rest/v2/searchSeats"
+        public static let timeAllowedPath = "/rest/v2/timeAllowedForSeat"
+        public static let startTimesPath = "/rest/v2/startTimesForSeat"
+        public static let endTimesPath = "/rest/v2/endTimesForSeat"
+        public static let reservationsPath = "/rest/v2/user/reservations"
+        public static let cancelPath = "/rest/v2/cancel"
+        public static let freeBookPath = "/rest/v2/freeBook"
+        public static let captchaPath = "/cap/captcha"
+        public static let checkCaptchaPath = "/cap/checkCaptcha"
     }
 }

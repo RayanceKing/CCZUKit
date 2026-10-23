@@ -5,7 +5,7 @@ import Foundation
 public final class JwqywxApplication {
     var loginTask: Task<Message<LoginUserData>, Error>?
     var authenticationGeneration = 0
-    let client: DefaultHTTPClient
+    public let client: DefaultHTTPClient
     var authorizationToken: String?
     var authorizationId: String?
     var studentNumber: String?
